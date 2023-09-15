@@ -1,0 +1,33 @@
+Configuratron:
+  preload: True
+
+use_gpu: False
+deep1010: False
+
+datasets:
+  sleepeeg:
+    name: "sleepeeg"
+    toplevel: '/work3/theb/timeseries/training_raw/'
+    events: {'nonrem1': 0, 'nonrem2': 1, 'nonrem3': 2, 'rem': 3, 'wake': 4}
+    tmin: 0
+    tlen: 30
+    test_size: 0.2
+    val_size: 0.2
+    chunk_duration: '30'
+    exclude_channels: ['STI']
+    preload: True
+    picks: ['F3-M2', 'F4-M1', 'C3-M2', 'C4-M1', 'O1-M2', 'O2-M1']
+    deep1010: False
+    rename_channels: 
+      F3-M2: F3-M2
+      F4-M1: F4-M1
+      C3-M2: C3-M2
+      C4-M1: C4-M1
+      O1-M2: O1-M2
+      O2-M1: O2-M1
+    #toplevel: /Users/theb/Desktop/physionet.org/physionet.org/files/challenge-2018/1.0.0/training/∂
+    train_params: 
+      epochs: 7
+      batch_size: 4
+    lr: 0.0001
+    folds: 5
