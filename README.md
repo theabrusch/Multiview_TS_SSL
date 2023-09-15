@@ -15,3 +15,6 @@ To pretrain the the models run the following code, changing pretraining_setup to
 ```
 python3 main.py --pretrain_epochs 10 --batchsize 64 --pretrain True --finetune False --learning_rate 1e-3 --sample_pretrain_subjects False --loss 'time_loss' --pretraining_setup 'MPNN'
 ```
+
+Feel free to contact me, Thea, at theb@dtu.dk upon any questions. 
+I plan to update the repo with cleaner versions of the code during the fall of 2023 (i.e. I will not change major functionality, but simply remove redundant code and improve the commenting). 
