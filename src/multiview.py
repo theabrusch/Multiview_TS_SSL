@@ -168,7 +168,7 @@ class Multiview(nn.Module):
         out = self.forward(x)
         loss = loss_fn(out)
         if isinstance(loss, tuple):
-            return *loss
+            return loss
         else:
             return loss, *[torch.tensor(0)]*2
 
