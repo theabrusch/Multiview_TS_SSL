@@ -1,7 +1,6 @@
 # Multi-view self-supervised learning for multivariate variable-channel time series
 Implementation of the code for "Multi-view self-supervised learning for multivariate variable-channel time series" (https://arxiv.org/abs/2307.09614)
 
----
 ## Downloading and preprocessing the data 
 Initially, download the The PhysioNet/Computing in Cardiology Challenge 2018 data (https://physionet.org/content/challenge-2018/1.0.0/) for pretraining and the Sleep Cassette data (https://www.physionet.org/content/sleep-edfx/1.0.0/). 
 Run the following lines with correct root paths and desired output folders to preprocess the data to follow the correct format:
