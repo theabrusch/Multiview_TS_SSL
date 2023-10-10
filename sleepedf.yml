@@ -7,7 +7,7 @@ deep1010: False
 datasets:
   sleepedf:
     name: "sleepedf"
-    toplevel: '/path/to/data/'
+    toplevel: '/path/to/sleepedf/' #UPDATE
     events: {'Sleep stage W': 0, 'Sleep stage 1': 1, 'Sleep stage 2': 2, 'Sleep stage 3': 3, 'Sleep stage 4': 3, 'Sleep stage R': 4}
     tmin: 0
     tlen: 30
@@ -21,7 +21,6 @@ datasets:
     rename_channels: 
       FPZ: 'EEG Fpz-Cz'
       PZ: 'EEG Pz-Oz'
-    #toplevel: /Users/theb/Desktop/physionet.org/physionet.org/files/challenge-2018/1.0.0/training/∂
     train_params:
       epochs: 7
       batch_size: 4

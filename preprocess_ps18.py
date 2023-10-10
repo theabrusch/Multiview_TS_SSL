@@ -114,18 +114,12 @@ def process_labels_to_events(labels, label_names):
     return events
 
 
-
-
-out_folder = '/Users/theb/Desktop/physionet.org/physionet.org/files/challenge-2018/1.0.0/training/'
-out_folder = '/Users/theb/Desktop/training_raw/'
-root_folder = '/Volumes/SED/training/'
-
 def main(args):
-    subjects = os.listdir(root_folder)
+    subjects = os.listdir(args.root_folder)
     for i, subject in enumerate(subjects):
         print('Processing subject', i+1, 'of', len(subjects))
-        subj_folder = os.path.join(root_folder, subject)
-        subj_out_folder = os.path.join(out_folder, subject)
+        subj_folder = os.path.join(args.root_folder, subject)
+        subj_out_folder = os.path.join(args.out_folder, subject)
         if not os.path.exists(subj_out_folder):
             os.makedirs(subj_out_folder, exist_ok = True)
         try:

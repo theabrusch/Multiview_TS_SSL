@@ -141,7 +141,7 @@ if __name__ == '__main__':
 
     # data arguments
     # path to config files. Remember to change paths in config files. 
-    parser.add_argument('--data_path', type = str, default = 'sleepeeg.yml')
+    parser.add_argument('--data_path', type = str, default = 'sleepps18.yml')
     parser.add_argument('--finetune_path', type = str, default = 'sleepedf.yml')
     # whether or not to sample balanced during finetuning
     parser.add_argument('--balanced_sampling', type = str, default = 'finetune')

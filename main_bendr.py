@@ -168,8 +168,8 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     # training arguments
-    parser.add_argument('--data_path', type = str, default = 'sleepeeg_local.yml')
-    parser.add_argument('--finetune_path', type = str, default = 'sleepedf_local.yml')
+    parser.add_argument('--data_path', type = str, default = 'sleepps18.yml')
+    parser.add_argument('--finetune_path', type = str, default = 'sleepedf.yml')
     parser.add_argument('--no_save', type = eval, default = False)
     parser.add_argument('--load_model', type = eval, default = True)
     parser.add_argument('--num-workers', default=6, type=int)

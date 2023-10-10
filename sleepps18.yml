@@ -5,9 +5,9 @@ use_gpu: False
 deep1010: False
 
 datasets:
-  sleepeeg:
-    name: "sleepeeg"
-    toplevel: '/work3/theb/timeseries/training_raw/'
+  sleepps18:
+    name: "sleepps18"
+    toplevel: '/path/to/ps18/' #UPDATE
     events: {'nonrem1': 0, 'nonrem2': 1, 'nonrem3': 2, 'rem': 3, 'wake': 4}
     tmin: 0
     tlen: 30
@@ -25,7 +25,6 @@ datasets:
       C4-M1: C4-M1
       O1-M2: O1-M2
       O2-M1: O2-M1
-    #toplevel: /Users/theb/Desktop/physionet.org/physionet.org/files/challenge-2018/1.0.0/training/∂
     train_params: 
       epochs: 7
       batch_size: 4
