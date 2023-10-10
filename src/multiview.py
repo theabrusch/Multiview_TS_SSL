@@ -88,17 +88,16 @@ class Wave2Vec(nn.Module):
                  hidden_channels = 512, 
                  nlayers = 6, do = 0.1, 
                  norm = 'group',
-                 readout_layer = False,):
+                 ):
         super().__init__()
         self.channels = channels
         width = [3] + [2]*(nlayers-1)
         in_channels = [channels] + [hidden_channels]*(nlayers-1)
         out_channels = [hidden_channels]*(nlayers - 1) + [out_dim]
         self.convblocks = nn.Sequential(*[wave2vecblock(channels_in= in_channels[i], channels_out = out_channels[i], kernel = width[i], stride = width[i], norm = norm, dropout = do) for i in range(nlayers)])
-        self.readout = nn.Conv1d(out_dim, out_dim, 1) if readout_layer else nn.Identity()
         self.out_shape = conv1D_out_shape(input_shape, width, width, [w//2 for w in width])
     def forward(self, x):
-        return self.readout(self.convblocks(x))
+        return self.convblocks(x)
 
 
 class Multiview(nn.Module):
@@ -110,11 +109,13 @@ class Multiview(nn.Module):
                  hidden_channels = 256, 
                  nlayers = 6,
                  out_dim = 64,
-                 readout_layer = True,
                  projection_head = True,
                  n_layers_proj = 1,
                  embedding_dim = 32,
                  loss = 'time_loss',
+                 mpnn = False, 
+                 num_message_passing_rounds = 2, 
+                 feat_do = 0.1,
                  **kwargs):
         super().__init__()
         self.channels = channels
@@ -122,10 +123,9 @@ class Multiview(nn.Module):
         self.out_dim = out_dim
         self.wave2vec = Wave2Vec(channels, input_shape = 33, out_dim = out_dim, 
                                  hidden_channels = hidden_channels, nlayers = nlayers, 
-                                 norm = 'group', do = conv_do, readout_layer=readout_layer)
+                                 norm = 'group', do = conv_do)
         self.classifier = TimeClassifier(in_features = out_dim, num_classes = num_classes, 
                                          pool = 'adapt_avg', orig_channels = orig_channels)
-        self.projection_head = projection_head
 
         if projection_head:
             if not loss == 'time_loss':
@@ -134,30 +134,46 @@ class Multiview(nn.Module):
                                                 pool = 'adapt_avg', orig_channels = orig_channels)
             else:
                 self.projector = TimeProjector(in_features = out_dim, output_dim = embedding_dim, n_layers = n_layers_proj)
+        else:
+            self.projector = nn.Identity()
+        
+        self.mpnn = mpnn
+        if mpnn:
+            self.messagepassing = MPNN(out_dim, num_message_passing_rounds, feat_do)
+        else:
+            self.messagepassing = nn.Identity()
     
     def forward(self, x, classify = False):
         b, ch, ts = x.shape
-        if ch > self.channels:
-            x = x.view(b*ch, 1, ts)
+        x = x.view(b*ch, 1, ts)
         x = self.wave2vec(x)
-        time_out = x.shape[-1]
 
-        if self.projection_head and not classify:
-            # only reshape after projection head
-            out = self.projector(x)
-            if len(out.shape) > 2:
-                out = out.reshape(b, ch, -1, time_out)
-            else:
-                out = out.reshape(b, ch, -1)
-            return out
+        if self.mpnn:
+            view_id, message_from, message_to = self.get_view_ids(b, ch, x.device)
 
-        
-        if ch > self.channels:
-            x = x.view(b, ch, self.out_dim, time_out)
+            latents = latents.permute(0,2,1)
+            out_mpnn = self.messagepassing(latents, message_from, message_to, view_id, ch, b)
+            out = out_mpnn.permute(0,2,1)
+
+        out = self.projector(out)
+        out = out.view(b, ch, *out.shape[1:])
+
         if classify:
-            return self.classifier(x)            
+            return self.classifier(out)            
         else:
-            return x
+            return out
+    
+    def remove_projector(self):
+        self.projector = nn.Identity()
+
+    def get_view_ids(self, b, ch, device):
+        view_id = torch.arange(b).unsqueeze(1).repeat(1, ch).view(-1).to(device)
+        message_from = torch.arange(b*ch).unsqueeze(1).repeat(1, (ch-1)).view(-1).to(device)
+        message_to = torch.arange(b*ch).view(b, ch).unsqueeze(1).repeat(1, ch, 1)
+        idx = ~torch.eye(ch).view(1, ch, ch).repeat(b, 1, 1).bool()
+        message_to = message_to[idx].view(-1).to(device)
+
+        return view_id, message_from, message_to
 
     def update_classifier(self, num_classes, orig_channels, seed = None):
         torch.manual_seed(seed)
@@ -165,61 +181,37 @@ class Multiview(nn.Module):
 
     def train_step(self, x, loss_fn, device):
         x = x.to(device)
-        out = self.forward(x)
+
+        if self.mpnn:
+            # partition the dataset into two views
+            ch_size = np.random.randint(2, x.size(1)-1)
+            random_channels = np.random.rand(x.size(1)).argpartition(x.size(1)-1)
+            view_1_idx = random_channels[:ch_size] # randomly select ch_size channels per input
+            view_2_idx = random_channels[ch_size:] # take the remaining as the second view
+            view_1 = x[:, view_1_idx, :]
+            view_2 = x[:, view_2_idx, :]
+
+            out1 = self.forward(view_1)
+            out2 = self.forward(view_2)
+
+            out = torch.cat([out1.unsqueeze(1), out2.unsqueeze(1)], dim = 1)
+        else:
+            out = self.forward(x)
+
         loss = loss_fn(out)
+        
         if isinstance(loss, tuple):
             return loss
         else:
             return loss, *[torch.tensor(0)]*2
 
-class GNNMultiview(nn.Module):
-    def __init__(self, 
-                 channels, 
-                 time_length, 
-                 num_classes, 
-                 norm = 'group', 
-                 conv_do = 0.1,
-                 feat_do = 0.4,
-                 num_message_passing_rounds = 2, 
-                 hidden_channels = 256, 
-                 nlayers = 6, 
-                 out_dim = 64,
-                 projection_head = True,
-                 n_layers_proj = 1,
-                 embedding_dim = 32,
-                 readout_layer = True,
-                 loss = 'time_loss',
-                 **kwargs):
+class MPNN(nn.Module):
+    def __init__(self, input_dim, num_message_passing_rounds, feat_do):
         super().__init__()
-        self.channels = channels
-        self.time_length = time_length
-        self.num_classes = num_classes
-        self.wave2vec = Wave2Vec(channels, input_shape = time_length, out_dim = out_dim, 
-                                 hidden_channels = hidden_channels, nlayers = nlayers, norm = norm, 
-                                 do = conv_do, readout_layer = readout_layer)
-
-
-        self.out_dim = out_dim
-        self.classifier = TimeClassifier(in_features = out_dim, num_classes = num_classes, 
-                                         pool = 'adapt_avg', orig_channels = channels, 
-                                         time_length = time_length)
-        self.projection_head = projection_head
-
-        if projection_head:
-            if not loss == 'time_loss':
-                self.projector = TimeClassifier(in_features = out_dim, num_classes = embedding_dim, 
-                                            pool = 'adapt_avg', orig_channels = channels, n_layers=n_layers_proj,
-                                            time_length = time_length)
-            else:
-                self.projector = TimeProjector(in_features = out_dim, output_dim = embedding_dim, n_layers=n_layers_proj)
-
-        self.state_dim = out_dim
-        print('out_dim', out_dim)
-        
-        # Message passing layers (from_state, to_state) -> message
+        # message passing networks
         self.message_nets = nn.ModuleList([
             nn.Sequential(
-                nn.Linear(out_dim*2, out_dim),
+                nn.Linear(input_dim*2, input_dim),
                 nn.Dropout(feat_do),
                 nn.ReLU(),
         )
@@ -228,83 +220,24 @@ class GNNMultiview(nn.Module):
 
         # Readout layer
         self.readout_net = nn.Sequential(
-            nn.Linear(out_dim, out_dim),
+            nn.Linear(input_dim, input_dim),
             nn.Dropout(feat_do),
             nn.ReLU(),
-            nn.Linear(out_dim, out_dim) if readout_layer else nn.Identity(),
+            nn.Linear(input_dim, input_dim),
         )
-
-    def forward(self, x, classify = False):
-        b, ch, ts = x.shape
-        x = x.view(b*ch, 1, ts)
-        latents = self.wave2vec(x)
-
-        view_id = torch.arange(b).unsqueeze(1).repeat(1, ch).view(-1).to(x.device)
-        message_from = torch.arange(b*ch).unsqueeze(1).repeat(1, (ch-1)).view(-1).to(x.device)
-        message_to = torch.arange(b*ch).view(b, ch).unsqueeze(1).repeat(1, ch, 1)
-        idx = ~torch.eye(ch).view(1, ch, ch).repeat(b, 1, 1).bool()
-        message_to = message_to[idx].view(-1).to(x.device)
-
-        latents = latents.permute(0,2,1)
-
+    
+    def forward(self, latents, message_from, message_to, view_id, ch, batch_size):
         for message_net in self.message_nets:
             # divide by ch-1 to take mean
             message = message_net(torch.cat([latents[message_from], latents[message_to]], dim=-1))/(ch-1)
             # Sum messages
-            latents.index_add_(0, message_to.to(x.device), message)
+            latents.index_add_(0, message_to, message)
 
-        y = torch.zeros(b, *latents.shape[1:]).to(x.device)
-        y.index_add_(0, view_id, latents)
-        # divide by ch to take mean
-        out_mpnn = self.readout_net(y)/ch
+        # average across nodes 
+        y = torch.zeros(batch_size, *latents.shape[1:]).to(latents.device)
+        y.index_add_(0, view_id, latents)/ch
+        return self.readout_net(y)
 
-        out_mpnn = out_mpnn.permute(0,2,1)
-
-        if classify:
-            out = self.classifier(out_mpnn)
-        elif self.projection_head:
-            out = self.projector(out_mpnn)
-        else:
-            out = out_mpnn
-
-        return out
-        
-    def get_view_pairs(self, view_id):
-        """Yield all distinct pairs."""
-        for i, vi in enumerate(view_id):
-            for j, vj in enumerate(view_id):
-                if vi == vj and i != j:
-                    yield [i, j]
-
-    def take_channel(self, A, indx):
-        indx = indx.unsqueeze(2).repeat(1,1,A.shape[2])
-        return torch.gather(A, 1, indx)
-
-    def train_step(self, x, loss_fn, device):
-        # partition the dataset into two views
-        ch_size = np.random.randint(2, x.size(1)-1)
-        random_channels = np.random.rand(x.size(1)).argpartition(x.size(1)-1)
-        view_1_idx = random_channels[:ch_size] # randomly select ch_size channels per input
-        view_2_idx = random_channels[ch_size:] # take the remaining as the second view
-        #view_1 = self.take_channel(x, torch.tensor(view_1_idx).to(device))
-        #view_2 = self.take_channel(x, torch.tensor(view_2_idx).to(device))
-        view_1 = x[:, view_1_idx, :]
-        view_2 = x[:, view_2_idx, :]
-
-        out1 = self.forward(view_1)
-        out2 = self.forward(view_2)
-
-        out = torch.cat([out1.unsqueeze(1), out2.unsqueeze(1)], dim = 1)
-        loss = loss_fn(out)
-
-        sim = torch.tensor(0)
-        avg_loss = torch.tensor(0)
-        latent_loss = torch.tensor(0)
-
-        if isinstance(loss, tuple):
-            return *loss
-        else:
-            return loss, *[torch.tensor(0)]*2
 
 def pretrain(model, 
             dataloader,
@@ -515,13 +448,10 @@ def evaluate_classifier(model,
 def load_model(pretraining_setup, device, channels, time_length, num_classes, model_args):
     torch.manual_seed(model_args.seed)
     if pretraining_setup == 'MPNN':
-        model = GNNMultiview(channels = 1, time_length = time_length, num_classes = num_classes, **vars(model_args)).to(device)
+        model = Multiview(channels = 1, orig_channels=channels, time_length = time_length, num_classes = num_classes, mpnn = True, **vars(model_args)).to(device)
     elif pretraining_setup == 'nonMPNN':
-        model = Multiview(channels = 1, orig_channels=6, time_length = time_length, num_classes = num_classes, **vars(model_args)).to(device)
-    elif pretraining_setup == 'None':
-        model = Multiview(channels = channels, orig_channels=channels, time_length = time_length, num_classes = num_classes, **vars(model_args)).to(device)
+        model = Multiview(channels = 1, orig_channels=channels, time_length = time_length, num_classes = num_classes, mpnn = False, **vars(model_args)).to(device)
 
-        
     if model_args.loss == 'time_loss':
         loss_fn = CMCloss(temperature = 0.5, criterion='TS2Vec').to(device)
     elif model_args.loss == 'contrastive':
