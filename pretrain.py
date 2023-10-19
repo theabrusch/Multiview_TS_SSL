@@ -33,6 +33,7 @@ def main(args):
 
     output_path = f'pretrained_models/{dset}_{args.pretraining_setup}_{args.loss}'
     print('Saving outputs in', output_path)
+    output_path = check_output_path(output_path)
 
     # initialize wandb
     wandb.init(project = 'MultiView_new', group = f'{dset}_{args.pretraining_setup}', config = args)
