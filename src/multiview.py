@@ -87,15 +87,21 @@ class Wave2Vec(nn.Module):
                  out_dim = 64, 
                  hidden_channels = 512, 
                  nlayers = 6, do = 0.1, 
+                 stride = 'width',
                  norm = 'group',
                  ):
         super().__init__()
         self.channels = channels
-        width = [3] + [2]*(nlayers-1)
+        width = [3]*nlayers
+        if stride == 'width':
+            stride = width
+        else:
+            stride = [1]*(nlayers)
+
         in_channels = [channels] + [hidden_channels]*(nlayers-1)
         out_channels = [hidden_channels]*(nlayers - 1) + [out_dim]
-        self.convblocks = nn.Sequential(*[wave2vecblock(channels_in= in_channels[i], channels_out = out_channels[i], kernel = width[i], stride = width[i], norm = norm, dropout = do) for i in range(nlayers)])
-        self.out_shape = conv1D_out_shape(input_shape, width, width, [w//2 for w in width])
+        self.convblocks = nn.Sequential(*[wave2vecblock(channels_in= in_channels[i], channels_out = out_channels[i], kernel = width[i], stride = stride[i], norm = norm, dropout = do) for i in range(nlayers)])
+        self.out_shape = conv1D_out_shape(input_shape, width, stride, [w//2 for w in width])
     def forward(self, x):
         return self.convblocks(x)
 
@@ -116,6 +122,7 @@ class Multiview(nn.Module):
                  mpnn = False, 
                  num_message_passing_rounds = 2, 
                  feat_do = 0.1,
+                 pool = 'adapt_avg',
                  **kwargs):
         super().__init__()
         self.channels = channels
@@ -125,13 +132,13 @@ class Multiview(nn.Module):
                                  hidden_channels = hidden_channels, nlayers = nlayers, 
                                  norm = 'group', do = conv_do)
         self.classifier = TimeClassifier(in_features = out_dim, num_classes = num_classes, 
-                                         pool = 'adapt_avg', orig_channels = orig_channels)
+                                         pool = pool, orig_channels = orig_channels, time_length = self.wave2vec.out_shape)
 
         if projection_head:
             if not loss == 'time_loss':
                 self.projector = TimeClassifier(in_features = out_dim, num_classes = embedding_dim,
                                                 n_layers = n_layers_proj,
-                                                pool = 'adapt_avg', orig_channels = orig_channels)
+                                                pool = pool, orig_channels = orig_channels, time_length = self.wave2vec.out_shape)
             else:
                 self.projector = TimeProjector(in_features = out_dim, output_dim = embedding_dim, n_layers = n_layers_proj)
         else:
@@ -146,17 +153,19 @@ class Multiview(nn.Module):
     def forward(self, x, classify = False):
         b, ch, ts = x.shape
         x = x.view(b*ch, 1, ts)
-        x = self.wave2vec(x)
+        latents = self.wave2vec(x)
 
         if self.mpnn:
             view_id, message_from, message_to = self.get_view_ids(b, ch, x.device)
 
             latents = latents.permute(0,2,1)
             out_mpnn = self.messagepassing(latents, message_from, message_to, view_id, ch, b)
-            out = out_mpnn.permute(0,2,1)
+            latents = out_mpnn.permute(0,2,1)
 
-        out = self.projector(out)
-        out = out.view(b, ch, *out.shape[1:])
+        out = self.projector(latents)
+
+        if not self.mpnn:
+            out = out.view(b, ch, *out.shape[1:])
 
         if classify:
             return self.classifier(out)            
