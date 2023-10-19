@@ -111,6 +111,7 @@ class Multiview(nn.Module):
                  channels,
                  orig_channels,
                  num_classes,
+                 time_length = 33,
                  conv_do = 0.1,
                  hidden_channels = 256, 
                  nlayers = 6,
@@ -128,7 +129,7 @@ class Multiview(nn.Module):
         self.channels = channels
         self.num_classes = num_classes
         self.out_dim = out_dim
-        self.wave2vec = Wave2Vec(channels, input_shape = 33, out_dim = out_dim, 
+        self.wave2vec = Wave2Vec(channels, input_shape = time_length, out_dim = out_dim, 
                                  hidden_channels = hidden_channels, nlayers = nlayers, 
                                  norm = 'group', do = conv_do)
         self.classifier = TimeClassifier(in_features = out_dim, num_classes = num_classes, 
