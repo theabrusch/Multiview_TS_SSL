@@ -2,6 +2,7 @@ import torch
 import argparse
 from src.multiview import load_model, pretrain
 from src.eegdataset import construct_eeg_datasets
+from src.dataset import get_datasets
 from torch.optim import AdamW
 import os
 import wandb
@@ -22,17 +23,19 @@ def main(args):
     args.train_mode = 'pretrain'
     # always normalize epochs channelwise within each window
     args.standardize_epochs = 'channelwise'
+    dset = args.data_path.split('/')[-2]
     
     # load data 
-    pretrain_loader, pretrain_val_loader, _, _, _, (channels, time_length, num_classes) = construct_eeg_datasets(**vars(args))
+    #pretrain_loader, pretrain_val_loader, _, _, _, (channels, time_length, num_classes) = construct_eeg_datasets(**vars(args))
+    pretrain_loader, pretrain_val_loader, pretrain_test_loader, (channels, time_length, num_classes) = get_datasets(args.data_path, args.batchsize)
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    output_path = f'pretrained_models/MultiView_{args.pretraining_setup}_{args.loss}'
+    output_path = f'pretrained_models/{dset}_{args.pretraining_setup}_{args.loss}'
     print('Saving outputs in', output_path)
 
     # initialize wandb
-    wandb.init(project = 'MultiView', group = args.pretraining_setup, config = args)
+    wandb.init(project = 'MultiView_new', group = f'{dset}_{args.pretraining_setup}', config = args)
 
     # setup model
     model, loss_fn = load_model(args.pretraining_setup, device, channels, time_length, num_classes, args)
@@ -71,21 +74,22 @@ if __name__ == '__main__':
     parser.add_argument('--job_id', type = str, default = '0')
     # whether or not to save finetuned models
     parser.add_argument('--load_model', type = eval, default = False)
-    parser.add_argument('--pretraining_setup', type = str, default = 'MPNN', options = ['MPNN', 'nonMPNN'])
+    parser.add_argument('--pretraining_setup', type = str, default = 'MPNN', choices = ['MPNN', 'nonMPNN'])
     parser.add_argument('--seed', type = int, default = 42)
 
     # data arguments
     # path to config files. Remember to change paths in config files. 
-    parser.add_argument('--data_path', type = str, default = 'sleepps18.yml')
+    parser.add_argument('--data_path', type = str, default = '/Users/theb/Desktop/data/HAR/') #sleepps18.yml
     parser.add_argument('--finetune_path', type = str, default = 'sleepedf.yml')
     # whether or not to sample balanced during finetuning
     parser.add_argument('--balanced_sampling', type = str, default = 'finetune')
     # number of samples to finetune on. Can be list for multiple runs
 
     # model arguments
-    parser.add_argument('--layers', type = int, default = 6)
+    parser.add_argument('--nlayers', type = int, default = 3)
     # early stopping criterion during finetuning. Can be loss or accuracy (on validation set)
     parser.add_argument('--conv_do', type = float, default = 0.1)
+    parser.add_argument('--pool', type = str, default = 'flatten', choices = ['adapt_avg', 'flatten'])
     parser.add_argument('--feat_do', type = float, default = 0.1)
     parser.add_argument('--num_message_passing_rounds', type = int, default = 3)
     parser.add_argument('--hidden_channels', type = int, default = 256)
@@ -98,7 +102,7 @@ if __name__ == '__main__':
     parser.add_argument('--sample_pretrain_subjects', type = eval, default = False)
 
     # optimizer arguments
-    parser.add_argument('--loss', type = str, default = 'time_loss', options = ['time_loss', 'contrastive', 'COCOA'])
+    parser.add_argument('--loss', type = str, default = 'contrastive', choices = ['time_loss', 'contrastive', 'COCOA'])
     # whether or not to compute performance on test set during training
     parser.add_argument('--track_test_performance', type = eval, default = True)
     parser.add_argument('--learning_rate', type = float, default = 1e-3)
