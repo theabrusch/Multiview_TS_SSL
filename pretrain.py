@@ -32,12 +32,12 @@ def main(args):
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    output_path = f'pretrained_models/{dset}_{args.model_setup}_{args.loss}'
+    output_path = f'pretrained_models/{dset}_{args.model_setup}_{args.pretraining_setup}_{args.loss}'
     print('Saving outputs in', output_path)
     output_path = check_output_path(output_path)
 
     # initialize wandb
-    wandb.init(project = 'MultiView_new', group = f'{dset}_{args.model_setup}', config = args)
+    wandb.init(project = 'MultiView_new', group = f'{dset}_{args.model_setup}_{args.pretraining_setup}', config = args)
 
     # setup model
     model, loss_fn = load_model(args.model_setup, device, args)

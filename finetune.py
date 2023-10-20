@@ -37,15 +37,15 @@ def main(args):
     dset = args.data_path.split('/')[-2]
 
     if args.load_model:
-        pretrained_model_path = f'pretrained_models/{args.pretraining_dset}_{args.pretraining_setup}_{args.loss}'
-        output_path = f'pretrained_models/{dset}_{args.pretraining_setup}_{args.loss}'
-        group = f'{dset}_{args.pretraining_setup}_{args.loss}'
+        pretrained_model_path = f'pretrained_models/{args.pretraining_dset}_{args.model_setup}_{args.pretraining_setup}_{args.loss}'
+        output_path = f'pretrained_models/{dset}_{args.model_setup}_{args.pretraining_setup}_{args.loss}'
+        group = f'{dset}_{args.model_setup}_{args.pretraining_setup}_{args.loss}'
         model_arg_path = pretrained_model_path + '/args.pkl'
         with open(model_arg_path, 'rb') as f:
             model_args = pickle.load(f) 
     else:
-        output_path = f'finetuned_models/{args.pretraining_setup}_scratch'
-        group = f'{dset}_{args.pretraining_setup}_scratch'
+        output_path = f'finetuned_models/{args.model_setup}_scratch'
+        group = f'{dset}_{args.model_setup}_scratch'
         model_args = args
         model_args.orig_channels = channels
         model_args.time_length = time_length
@@ -57,7 +57,7 @@ def main(args):
 
     for ft_loader, ft_val_loader in zip(finetune_loader, finetune_val_loader):
         wandb.init(project = 'MultiView_new', group = group, config = args)
-        model, loss_fn = load_model(args.pretraining_setup, device, model_args)
+        model, loss_fn = load_model(args.model_setup, device, model_args)
         train_samples = len(ft_loader.dataset)
         val_samples = len(ft_val_loader.dataset)
 
@@ -114,7 +114,8 @@ if __name__ == '__main__':
     parser.add_argument('--load_model', type = eval, default = False)
     parser.add_argument('--optimize_encoder', type = eval, default = False)
     parser.add_argument('--pretraining_dset', type = str, default = 'HAR')
-    parser.add_argument('--pretraining_setup', type = str, default = 'MPNN', choices = ['MPNN', 'nonMPNN'])
+    parser.add_argument('--pretraining_setup', type = str, default = 'multiview', choices = ['multiview', 'cpc'])
+    parser.add_argument('--model_setup', type = str, default = 'MPNN', choices = ['MPNN', 'nonMPNN'])
 
     parser.add_argument('--seed', type = int, default = 42)
 
