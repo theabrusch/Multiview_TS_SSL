@@ -22,6 +22,8 @@ def get_datasets(data_path, batch_size, pretraining_setup, subsample=False):
     
     channels = train['samples'].shape[1]
     time_length = train['samples'].shape[2]
+    if pretraining_setup == 'cpc':
+        time_length = train['samples'].shape[2] // 2
     num_classes = len(train['labels'].unique())
 
     return train_loader, val_loader, test_loader, (channels, time_length, num_classes)
