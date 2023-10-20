@@ -27,7 +27,7 @@ def main(args):
     
     # load data 
     #pretrain_loader, pretrain_val_loader, _, _, _, (channels, time_length, num_classes) = construct_eeg_datasets(**vars(args))
-    pretrain_loader, pretrain_val_loader, pretrain_test_loader, (channels, time_length, num_classes) = get_datasets(args.data_path, args.batchsize, subsample = True)
+    pretrain_loader, pretrain_val_loader, pretrain_test_loader, (channels, time_length, num_classes) = get_datasets(args.data_path, args.batchsize, subsample = False)
     args.orig_channels, args.time_length, args.num_classes = channels, time_length, num_classes
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
