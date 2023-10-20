@@ -64,8 +64,9 @@ def main(args):
         if args.load_model:
             pretrained_model_path = pretrained_model_path + '/pretrained_model.pt'
             model.load_state_dict(torch.load(pretrained_model_path, map_location=device))
-            model.remove_projector()
-            model.update_classifier(num_classes, orig_channels=orig_channels, pool = args.pool, seed = args.seed)
+            
+        model.remove_projector()
+        model.update_classifier(num_classes, orig_channels=orig_channels, pool = args.pool, seed = args.seed)
         
         ft_output_path = output_path + f'/{train_samples}_samples'
         os.makedirs(ft_output_path, exist_ok=True)
@@ -110,7 +111,7 @@ if __name__ == '__main__':
     parser.add_argument('--job_id', type = str, default = '0')
     # whether or not to save finetuned models
     parser.add_argument('--save_model', type = eval, default = False)
-    parser.add_argument('--load_model', type = eval, default = True)
+    parser.add_argument('--load_model', type = eval, default = False)
     parser.add_argument('--optimize_encoder', type = eval, default = False)
     parser.add_argument('--pretraining_dset', type = str, default = 'HAR')
     parser.add_argument('--pretraining_setup', type = str, default = 'MPNN', choices = ['MPNN', 'nonMPNN'])
@@ -127,7 +128,7 @@ if __name__ == '__main__':
     parser.add_argument('--sample_generator', type = eval, nargs = '+', default = [10, 20, None])
 
     # model arguments
-    parser.add_argument('--nlayers', type = int, default = 6)
+    parser.add_argument('--nlayers', type = int, default = 3)
     # early stopping criterion during finetuning. Can be loss or accuracy (on validation set)
     parser.add_argument('--early_stopping_criterion', type = str, default = None, choices = [None, 'loss', 'acc'])
     parser.add_argument('--pool', type = str, default = 'adapt_avg', choices = ['adapt_avg', 'flatten'])
