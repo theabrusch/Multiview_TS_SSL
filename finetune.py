@@ -47,7 +47,7 @@ def main(args):
         output_path = f'finetuned_models/{args.pretraining_setup}_scratch'
         group = f'{dset}_{args.pretraining_setup}_scratch'
         model_args = args
-        model_args.channels = channels
+        model_args.orig_channels = channels
         model_args.time_length = time_length
         model_args.num_classes = num_classes
 
