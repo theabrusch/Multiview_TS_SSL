@@ -1,11 +1,16 @@
 from torch.utils.data import TensorDataset, DataLoader
 import torch
 from torch.nn import functional as F
+import numpy as np
 
-def get_datasets(data_path, batch_size):
+def get_datasets(data_path, batch_size, subsample=False):
     train = torch.load(data_path + 'train.pt')
     val = torch.load(data_path + 'val.pt')
     test = torch.load(data_path + 'test.pt')
+
+    if subsample:
+        train_idx = np.random.choice(np.arange(len(train['samples'])), size=100, replace=False)
+        train = {'samples': train['samples'][train_idx], 'labels': train['labels'][train_idx]}
 
     TFC_dset = TensorDataset(train['samples'], train['labels'])
     train_loader = DataLoader(TFC_dset, batch_size = batch_size, shuffle = True, drop_last=False)
