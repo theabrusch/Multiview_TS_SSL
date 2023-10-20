@@ -27,7 +27,8 @@ def main(args):
     
     # load data 
     #pretrain_loader, pretrain_val_loader, _, _, _, (channels, time_length, num_classes) = construct_eeg_datasets(**vars(args))
-    pretrain_loader, pretrain_val_loader, pretrain_test_loader, (channels, time_length, num_classes) = get_datasets(args.data_path, args.batchsize)
+    pretrain_loader, pretrain_val_loader, pretrain_test_loader, (channels, time_length, num_classes) = get_datasets(args.data_path, args.batchsize, subsample = True)
+    args.orig_channels, args.time_length, args.num_classes = channels, time_length, num_classes
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -39,7 +40,7 @@ def main(args):
     wandb.init(project = 'MultiView_new', group = f'{dset}_{args.pretraining_setup}', config = args)
 
     # setup model
-    model, loss_fn = load_model(args.pretraining_setup, device, channels, time_length, num_classes, args)
+    model, loss_fn = load_model(args.pretraining_setup, device, args)
 
     if args.load_model:
         model.load_state_dict(torch.load(output_path, map_location=device))
@@ -108,7 +109,7 @@ if __name__ == '__main__':
     parser.add_argument('--track_test_performance', type = eval, default = True)
     parser.add_argument('--learning_rate', type = float, default = 1e-3)
     parser.add_argument('--weight_decay', type = float, default = 5e-4)
-    parser.add_argument('--pretrain_epochs', type = int, default = 10)
+    parser.add_argument('--pretrain_epochs', type = int, default = 1)
     parser.add_argument('--batchsize', type = int, default = 128)
     args = parser.parse_args()
     main(args)
