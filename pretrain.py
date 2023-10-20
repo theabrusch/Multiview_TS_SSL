@@ -27,20 +27,20 @@ def main(args):
     
     # load data 
     #pretrain_loader, pretrain_val_loader, _, _, _, (channels, time_length, num_classes) = construct_eeg_datasets(**vars(args))
-    pretrain_loader, pretrain_val_loader, pretrain_test_loader, (channels, time_length, num_classes) = get_datasets(args.data_path, args.batchsize, subsample = False)
+    pretrain_loader, pretrain_val_loader, pretrain_test_loader, (channels, time_length, num_classes) = get_datasets(args.data_path, args.batchsize, pretraining_setup=args.pretraining_setup, subsample = False)
     args.orig_channels, args.time_length, args.num_classes = channels, time_length, num_classes
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    output_path = f'pretrained_models/{dset}_{args.pretraining_setup}_{args.loss}'
+    output_path = f'pretrained_models/{dset}_{args.model_setup}_{args.loss}'
     print('Saving outputs in', output_path)
     output_path = check_output_path(output_path)
 
     # initialize wandb
-    wandb.init(project = 'MultiView_new', group = f'{dset}_{args.pretraining_setup}', config = args)
+    wandb.init(project = 'MultiView_new', group = f'{dset}_{args.model_setup}', config = args)
 
     # setup model
-    model, loss_fn = load_model(args.pretraining_setup, device, args)
+    model, loss_fn = load_model(args.model_setup, device, args)
 
     if args.load_model:
         model.load_state_dict(torch.load(output_path, map_location=device))
@@ -76,7 +76,8 @@ if __name__ == '__main__':
     parser.add_argument('--job_id', type = str, default = '0')
     # whether or not to save finetuned models
     parser.add_argument('--load_model', type = eval, default = False)
-    parser.add_argument('--pretraining_setup', type = str, default = 'MPNN', choices = ['MPNN', 'nonMPNN'])
+    parser.add_argument('--model_setup', type = str, default = 'MPNN', choices = ['MPNN', 'nonMPNN'])
+    parser.add_argument('--pretraining_setup', type = str, default = 'cpc', choices = ['multiview', 'cpc'])
     parser.add_argument('--seed', type = int, default = 42)
 
     # data arguments
@@ -104,7 +105,7 @@ if __name__ == '__main__':
     parser.add_argument('--sample_pretrain_subjects', type = eval, default = False)
 
     # optimizer arguments
-    parser.add_argument('--loss', type = str, default = 'contrastive', choices = ['time_loss', 'contrastive', 'COCOA'])
+    parser.add_argument('--loss', type = str, default = 'time_loss', choices = ['time_loss', 'contrastive', 'COCOA'])
     # whether or not to compute performance on test set during training
     parser.add_argument('--track_test_performance', type = eval, default = True)
     parser.add_argument('--learning_rate', type = float, default = 1e-3)

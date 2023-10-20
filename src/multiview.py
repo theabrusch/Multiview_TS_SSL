@@ -193,22 +193,16 @@ class Multiview(nn.Module):
         self.classifier = TimeClassifier(in_features = self.out_dim, num_classes = num_classes, pool = pool, orig_channels = orig_channels)
 
     def train_step(self, x, loss_fn, device):
-        x = x.to(device)
 
         if self.mpnn:
-            # partition the dataset into two views
-            ch_size = np.random.randint(2, x.size(1)-1)
-            random_channels = np.random.rand(x.size(1)).argpartition(x.size(1)-1)
-            view_1_idx = random_channels[:ch_size] # randomly select ch_size channels per input
-            view_2_idx = random_channels[ch_size:] # take the remaining as the second view
-            view_1 = x[:, view_1_idx, :]
-            view_2 = x[:, view_2_idx, :]
+            view_1, view_2 = x[0].to(device).float(), x[1].to(device).float()
 
             out1 = self.forward(view_1)
             out2 = self.forward(view_2)
 
             out = torch.cat([out1.unsqueeze(1), out2.unsqueeze(1)], dim = 1)
         else:
+            x = x.to(device)
             out = self.forward(x)
 
         loss = loss_fn(out)
@@ -269,7 +263,7 @@ def pretrain(model,
         epoch_temp = 0
         model.train()
         for i, data in enumerate(dataloader):
-            x = data[0].to(device).float()
+            x = data[0]
             optimizer.zero_grad()
             loss, inst_loss, temp_loss = model.train_step(x, loss_fn, device)
             loss.backward()

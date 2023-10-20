@@ -28,7 +28,7 @@ def main(args):
     args.standardize_epochs = 'channelwise'
     
     # load data 
-    finetune_loader, finetune_val_loader, test_loader, (channels, time_length, num_classes) = get_datasets(args.data_path, args.batchsize)
+    finetune_loader, finetune_val_loader, test_loader, (channels, time_length, num_classes) = get_datasets(args.data_path, args.batchsize, pretraining_setup=None)
     orig_channels = channels
     finetune_loader = [finetune_loader]
     finetune_val_loader = [finetune_val_loader]
