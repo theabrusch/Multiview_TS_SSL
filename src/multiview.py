@@ -129,6 +129,7 @@ class Multiview(nn.Module):
         self.channels = channels
         self.num_classes = num_classes
         self.out_dim = out_dim
+        self.pool = pool
         self.wave2vec = Wave2Vec(channels, input_shape = time_length, out_dim = out_dim, 
                                  hidden_channels = hidden_channels, nlayers = nlayers, 
                                  norm = 'group', do = conv_do)
@@ -185,9 +186,11 @@ class Multiview(nn.Module):
 
         return view_id, message_from, message_to
 
-    def update_classifier(self, num_classes, orig_channels, seed = None):
+    def update_classifier(self, num_classes, orig_channels, pool = None, seed = None):
         torch.manual_seed(seed)
-        self.classifier = TimeClassifier(in_features = self.out_dim, num_classes = num_classes, pool = 'adapt_avg', orig_channels = orig_channels)
+        if pool is None:
+            pool = self.pool
+        self.classifier = TimeClassifier(in_features = self.out_dim, num_classes = num_classes, pool = pool, orig_channels = orig_channels)
 
     def train_step(self, x, loss_fn, device):
         x = x.to(device)
@@ -374,7 +377,7 @@ def finetune(model,
         model.train()
         for i, data in enumerate(dataloader):
             x = data[0].to(device).float()
-            y = data[-1].to(device)
+            y = data[-1].to(device).long()
             optimizer.zero_grad()
             out = model.forward(x, classify = True)
             loss_ = loss(out, y)
@@ -389,7 +392,7 @@ def finetune(model,
         model.eval()
         for i, data in enumerate(val_dataloader):
             x = data[0].to(device).float()
-            y = data[-1].to(device)
+            y = data[-1].to(device).long()
             out = model.forward(x, classify = True)
             loss_ = loss(out, y)
             val_loss += loss_.item()
@@ -432,7 +435,7 @@ def finetune(model,
                 print("Early stopping")
                 break
 
-    if early_stopping.early_stop:
+    if early_stopping_criterion is not None:
         # load best model
         model.load_state_dict(torch.load(f'{backup_path}/finetuned_model.pt'))
 
@@ -455,12 +458,12 @@ def evaluate_classifier(model,
     return acc, prec, rec, f
 
 
-def load_model(pretraining_setup, device, channels, time_length, num_classes, model_args):
+def load_model(pretraining_setup, device, model_args):
     torch.manual_seed(model_args.seed)
     if pretraining_setup == 'MPNN':
-        model = Multiview(channels = 1, orig_channels=channels, time_length = time_length, num_classes = num_classes, mpnn = True, **vars(model_args)).to(device)
+        model = Multiview(channels = 1, mpnn = True, **vars(model_args)).to(device)
     elif pretraining_setup == 'nonMPNN':
-        model = Multiview(channels = 1, orig_channels=channels, time_length = time_length, num_classes = num_classes, mpnn = False, **vars(model_args)).to(device)
+        model = Multiview(channels = 1, mpnn = False, **vars(model_args)).to(device)
 
     if model_args.loss == 'time_loss':
         loss_fn = CMCloss(temperature = 0.5, criterion='TS2Vec').to(device)
