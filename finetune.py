@@ -39,13 +39,13 @@ def main(args):
     if args.load_model:
         pretrained_model_path = f'pretrained_models/{args.pretraining_dset}_{args.pretraining_setup}_{args.loss}'
         output_path = f'pretrained_models/{dset}_{args.pretraining_setup}_{args.loss}'
-        group = f'{args.pretraining_setup}_{args.loss}'
+        group = f'{dset}_{args.pretraining_setup}_{args.loss}'
         model_arg_path = pretrained_model_path + '/args.pkl'
         with open(model_arg_path, 'rb') as f:
             model_args = pickle.load(f) 
     else:
         output_path = f'finetuned_models/{args.pretraining_setup}_scratch'
-        group = f'{args.pretraining_setup}_scratch'
+        group = f'{dset}_{args.pretraining_setup}_scratch'
         model_args = args
         model_args.channels = channels
         model_args.time_length = time_length
