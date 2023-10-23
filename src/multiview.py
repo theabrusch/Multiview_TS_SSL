@@ -282,7 +282,7 @@ def pretrain(model,
 
         model.eval()
         for i, data in enumerate(val_dataloader):
-            x = data[0].to(device).float()
+            x = data[0]
             loss, inst_loss, temp_loss = model.train_step(x, loss_fn, device)
             val_loss += loss.item()
             val_inst += inst_loss.item()
