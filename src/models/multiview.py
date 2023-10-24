@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from src.models.models import wave2vecblock
 import numpy as np
 from sklearn.metrics import balanced_accuracy_score, precision_recall_fscore_support
-from models.losses import COCOAloss, CMCloss
+from src.models.losses import COCOAloss, CMCloss
 import wandb
 
 class TimeClassifier(nn.Module):
