@@ -407,23 +407,6 @@ class EEG_dataset(TorchDataset):
             sig[-2,:] = signal[1,:]
             signal = sig
         
-        if not self.pretraining_setup is None:
-            if self.pretraining_setup == 'multiview':
-                # partition the dataset into two views
-                ch_size = np.random.randint(2, signal.size(1)-1)
-                random_channels = np.random.rand(signal.size(1)).argpartition(signal.size(1)-1)
-                view_1_idx = random_channels[:ch_size] # randomly select ch_size channels per input
-                view_2_idx = random_channels[ch_size:] # take the remaining as the second view
-                view_1 = signal[:, view_1_idx, :]
-                view_2 = signal[:, view_2_idx, :]
-            elif self.pretraining_setup == 'cpc':
-                # partition the x variables into two halves
-                time_length = signal.size(1)
-                half = time_length // 2
-                view_1 = signal[:, :half]
-                view_2 = signal[:, half:]
-            signal = [view_1, view_2]
-    
         return signal, label
     
 

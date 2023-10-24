@@ -111,6 +111,7 @@ class Multiview(nn.Module):
                  channels,
                  orig_channels,
                  num_classes,
+                 pretraining_setup = None,
                  time_length = 33,
                  conv_do = 0.1,
                  hidden_channels = 256, 
@@ -130,6 +131,7 @@ class Multiview(nn.Module):
         self.num_classes = num_classes
         self.out_dim = out_dim
         self.pool = pool
+        self.pretraining_setup = pretraining_setup
         self.wave2vec = Wave2Vec(channels, input_shape = time_length, out_dim = out_dim, 
                                  hidden_channels = hidden_channels, nlayers = nlayers, 
                                  norm = 'group', do = conv_do)
@@ -194,9 +196,22 @@ class Multiview(nn.Module):
 
     def train_step(self, x, loss_fn, device):
 
-        if self.mpnn:
-            view_1, view_2 = x[0].to(device).float(), x[1].to(device).float()
+        if self.pretraining_setup == 'multiview':
+            # partition the dataset into two views
+            ch_size = np.random.randint(2, x.size(1)-1)
+            random_channels = np.random.rand(x.size(1)).argpartition(x.size(1)-1)
+            view_1_idx = random_channels[:,:ch_size] # randomly select ch_size channels per input
+            view_2_idx = random_channels[:,ch_size:] # take the remaining as the second view
+            view_1 = x[:, view_1_idx, :]
+            view_2 = x[:, view_2_idx, :]
+        elif self.pretraining_setup == 'cpc':
+            # partition the x variables into two halves
+            time_length = x.size(1)
+            half = time_length // 2
+            view_1 = x[:, :half]
+            view_2 = x[:, half:]    
 
+        if self.mpnn:
             out1 = self.forward(view_1)
             out2 = self.forward(view_2)
 

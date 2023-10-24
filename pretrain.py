@@ -82,7 +82,7 @@ if __name__ == '__main__':
     # whether or not to save finetuned models
     parser.add_argument('--load_model', type = eval, default = False)
     parser.add_argument('--model_setup', type = str, default = 'MPNN', choices = ['MPNN', 'nonMPNN'])
-    parser.add_argument('--pretraining_setup', type = str, default = 'cpc', choices = ['multiview', 'cpc'])
+    parser.add_argument('--pretraining_setup', type = str, default = 'multiview', choices = ['multiview', 'cpc'])
     parser.add_argument('--seed', type = int, default = 42)
 
     # data arguments
@@ -94,7 +94,7 @@ if __name__ == '__main__':
     # number of samples to finetune on. Can be list for multiple runs
 
     # model arguments
-    parser.add_argument('--nlayers', type = int, default = 3)
+    parser.add_argument('--nlayers', type = int, default = 6)
     # early stopping criterion during finetuning. Can be loss or accuracy (on validation set)
     parser.add_argument('--conv_do', type = float, default = 0.1)
     parser.add_argument('--pool', type = str, default = 'flatten', choices = ['adapt_avg', 'flatten'])
