@@ -200,8 +200,8 @@ class Multiview(nn.Module):
             # partition the dataset into two views
             ch_size = np.random.randint(2, x.size(1)-1)
             random_channels = np.random.rand(x.size(1)).argpartition(x.size(1)-1)
-            view_1_idx = random_channels[:,:ch_size] # randomly select ch_size channels per input
-            view_2_idx = random_channels[:,ch_size:] # take the remaining as the second view
+            view_1_idx = random_channels[:ch_size] # randomly select ch_size channels per input
+            view_2_idx = random_channels[ch_size:] # take the remaining as the second view
             view_1 = x[:, view_1_idx, :]
             view_2 = x[:, view_2_idx, :]
         elif self.pretraining_setup == 'cpc':
@@ -278,7 +278,7 @@ def pretrain(model,
         epoch_temp = 0
         model.train()
         for i, data in enumerate(dataloader):
-            x = data[0]
+            x = data[0].float().to(device)
             optimizer.zero_grad()
             loss, inst_loss, temp_loss = model.train_step(x, loss_fn, device)
             loss.backward()
