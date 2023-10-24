@@ -23,11 +23,16 @@ def main(args):
     args.train_mode = 'pretrain'
     # always normalize epochs channelwise within each window
     args.standardize_epochs = 'channelwise'
-    dset = args.data_path.split('/')[-2]
     
     # load data 
     #pretrain_loader, pretrain_val_loader, _, _, _, (channels, time_length, num_classes) = construct_eeg_datasets(**vars(args))
-    pretrain_loader, pretrain_val_loader, pretrain_test_loader, (channels, time_length, num_classes) = get_datasets(args.data_path, args.batchsize, pretraining_setup=args.pretraining_setup, subsample = False)
+    if not 'sleep' in args.data_path:
+        dset = args.data_path.split('/')[-2]
+        pretrain_loader, pretrain_val_loader, pretrain_test_loader, (channels, time_length, num_classes) = get_datasets(args.data_path, args.batchsize, pretraining_setup=args.pretraining_setup, subsample = False)
+    else:
+        dset = args.data_path.split('.')[0]
+        pretrain_loader, pretrain_val_loader, _, _, _, (channels, time_length, num_classes) = construct_eeg_datasets(**vars(args))
+        
     args.orig_channels, args.time_length, args.num_classes = channels, time_length, num_classes
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -82,7 +87,7 @@ if __name__ == '__main__':
 
     # data arguments
     # path to config files. Remember to change paths in config files. 
-    parser.add_argument('--data_path', type = str, default = '/Users/theb/Desktop/data/HAR/') #sleepps18.yml
+    parser.add_argument('--data_path', type = str, default = 'sleepps18.yml') #sleepps18.yml /Users/theb/Desktop/data/HAR/
     parser.add_argument('--finetune_path', type = str, default = 'sleepedf.yml')
     # whether or not to sample balanced during finetuning
     parser.add_argument('--balanced_sampling', type = str, default = 'finetune')
@@ -102,7 +107,7 @@ if __name__ == '__main__':
 
     # eeg arguments
     # subsample number of subjects. If set to False, use all subjects, else set to integer
-    parser.add_argument('--sample_pretrain_subjects', type = eval, default = False)
+    parser.add_argument('--sample_pretrain_subjects', type = eval, default = 3)
 
     # optimizer arguments
     parser.add_argument('--loss', type = str, default = 'time_loss', choices = ['time_loss', 'contrastive', 'COCOA'])

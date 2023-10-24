@@ -18,8 +18,8 @@ warnings.filterwarnings("ignore", category=np.VisibleDeprecationWarning)
 
 def construct_eeg_datasets(data_path, 
                            finetune_path,
-                           batchsize, 
-                           target_batchsize,
+                           batchsize = None, 
+                           target_batchsize = None,
                            standardize_epochs = False,
                            balanced_sampling = 'None',
                            sample_pretrain_subjects = False, 

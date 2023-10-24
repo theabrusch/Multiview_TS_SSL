@@ -7,7 +7,7 @@ deep1010: False
 datasets:
   sleepps18:
     name: "sleepps18"
-    toplevel: '/path/to/ps18/' #UPDATE
+    toplevel: '/Users/theb/Desktop/data/training_raw/' #UPDATE
     events: {'nonrem1': 0, 'nonrem2': 1, 'nonrem3': 2, 'rem': 3, 'wake': 4}
     tmin: 0
     tlen: 30

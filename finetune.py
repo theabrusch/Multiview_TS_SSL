@@ -26,15 +26,20 @@ def main(args):
     args.train_mode = 'finetune'
     # always normalize epochs channelwise within each window
     args.standardize_epochs = 'channelwise'
+    dset = args.data_path.split('/')[-2]
     
     # load data 
-    finetune_loader, finetune_val_loader, test_loader, (channels, time_length, num_classes) = get_datasets(args.data_path, args.batchsize, pretraining_setup=None)
-    orig_channels = channels
-    finetune_loader = [finetune_loader]
-    finetune_val_loader = [finetune_val_loader]
+    if not 'sleep' in dset:
+        finetune_loader, finetune_val_loader, test_loader, (channels, time_length, num_classes) = get_datasets(args.data_path, args.batchsize, pretraining_setup=None)
+        finetune_loader = [finetune_loader]
+        finetune_val_loader = [finetune_val_loader]
+    else:
+        dset = dset.split('.')[0]
+        _, _, finetune_loader, finetune_val_loader, test_loader, (channels, time_length, num_classes) = construct_eeg_datasets(**vars(args))
     
+    orig_channels = channels
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    dset = args.data_path.split('/')[-2]
+    
 
     if args.load_model:
         pretrained_model_path = f'pretrained_models/{args.pretraining_dset}_{args.model_setup}_{args.pretraining_setup}_{args.loss}'
