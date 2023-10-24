@@ -206,10 +206,10 @@ class Multiview(nn.Module):
             view_2 = x[:, view_2_idx, :]
         elif self.pretraining_setup == 'cpc':
             # partition the x variables into two halves
-            time_length = x.size(1)
+            time_length = x.size(2)
             half = time_length // 2
-            view_1 = x[:, :half]
-            view_2 = x[:, half:]    
+            view_1 = x[:, :, :half]
+            view_2 = x[:, :, half:]    
 
         if self.mpnn:
             out1 = self.forward(view_1)
@@ -297,7 +297,7 @@ def pretrain(model,
 
         model.eval()
         for i, data in enumerate(val_dataloader):
-            x = data[0]
+            x = data[0].float().to(device)
             loss, inst_loss, temp_loss = model.train_step(x, loss_fn, device)
             val_loss += loss.item()
             val_inst += inst_loss.item()
