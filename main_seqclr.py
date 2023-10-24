@@ -1,13 +1,13 @@
 import torch
 import argparse
-from src.eegdataset import construct_eeg_datasets
-from src.seqclr_models import SeqCLR_R, SeqCLR_C, SeqProjector, SeqCLR_classifier, SeqCLR_W, DummyProjector
-from src.seqclr_trainer import pretrain
-from src.multiview import finetune, evaluate_classifier, TimeClassifier
+from src.datasets.eegdataset import construct_eeg_datasets
+from models.seqclr_models import SeqCLR_R, SeqCLR_C, SeqProjector, SeqCLR_classifier, SeqCLR_W, DummyProjector
+from src.trainers.seqclr_trainer import pretrain
+from src.models.multiview import finetune, evaluate_classifier, TimeClassifier
 from torch.optim import AdamW
 import numpy as np
 from sklearn.utils.class_weight import compute_class_weight
-from src.losses import get_loss 
+from models.losses import get_loss 
 import os
 import wandb
 import shutil

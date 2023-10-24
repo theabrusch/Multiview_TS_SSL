@@ -1,8 +1,8 @@
 import torch
 import argparse
-from src.multiview import load_model, pretrain
-from src.eegdataset import construct_eeg_datasets
-from src.dataset import get_datasets
+from src.models.multiview import load_model, pretrain
+from src.datasets.eegdataset import construct_eeg_datasets
+from src.datasets.dataset import get_datasets
 from torch.optim import AdamW
 import os
 import wandb

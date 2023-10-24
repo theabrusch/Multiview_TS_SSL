@@ -2,7 +2,7 @@ import copy
 import mne
 import parse
 import tqdm
-from src.multiview import TimeClassifier
+from src.models.multiview import TimeClassifier
 
 import torch
 import torch.nn.functional as F

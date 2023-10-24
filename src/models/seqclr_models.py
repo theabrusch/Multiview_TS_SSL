@@ -2,7 +2,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 import numpy as np 
-from src.multiview import Wave2Vec, TimeClassifier
+from src.models.multiview import Wave2Vec, TimeClassifier
 
 class GRU_resblock(nn.Module):
     def __init__(self, input_shape):

@@ -2,7 +2,7 @@ import torch
 import pandas as pd
 import numpy as np
 from sklearn.metrics import balanced_accuracy_score, precision_recall_fscore_support, roc_auc_score, average_precision_score
-from src.models import ContrastiveLoss2
+from src.models.models import ContrastiveLoss2
 from copy import deepcopy
 import wandb
 

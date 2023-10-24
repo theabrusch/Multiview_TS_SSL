@@ -1,8 +1,8 @@
 import torch
 import argparse
-from src.bendr import BendingCollegeWav2Vec, ConvEncoderBENDR, BENDRContextualizer, BENDRClassifier
-from src.multiview import finetune, evaluate_classifier
-from src.eegdataset import construct_eeg_datasets
+from models.bendr import BendingCollegeWav2Vec, ConvEncoderBENDR, BENDRContextualizer, BENDRClassifier
+from src.models.multiview import finetune, evaluate_classifier
+from src.datasets.eegdataset import construct_eeg_datasets
 from torch.optim import AdamW
 import numpy as np
 from sklearn.utils.class_weight import compute_class_weight

@@ -1,8 +1,8 @@
 import torch
 import argparse
-from src.multiview import load_model, finetune, evaluate_classifier
-from src.eegdataset import construct_eeg_datasets
-from src.dataset import get_datasets
+from src.models.multiview import load_model, finetune, evaluate_classifier
+from src.datasets.eegdataset import construct_eeg_datasets
+from src.datasets.dataset import get_datasets
 from torch.optim import AdamW
 import numpy as np
 from sklearn.utils.class_weight import compute_class_weight
