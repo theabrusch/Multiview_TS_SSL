@@ -18,6 +18,7 @@ warnings.filterwarnings("ignore", category=np.VisibleDeprecationWarning)
 
 def construct_eeg_datasets(data_path, 
                            finetune_path,
+                           pretraining_setup = None,
                            batchsize = None, 
                            target_batchsize = None,
                            standardize_epochs = False,
@@ -79,14 +80,8 @@ def construct_eeg_datasets(data_path,
         pretrain_train_thinkers, pretrain_val_thinkers = divide_thinkers(pretrain_thinkers)
         pretrain_dset, pretrain_val_dset = Dataset(pretrain_train_thinkers, dataset_info=info), Dataset(pretrain_val_thinkers, dataset_info=info)
 
-        aug_config = { 
-            'jitter_scale_ratio': 1.1,
-            'jitter_ratio': 0.8,
-            'max_seg': 8
-        }
-
         if not seqclr_setup:
-            pretrain_dset, pretrain_val_dset = EEG_dataset(pretrain_dset, aug_config, standardize_epochs=standardize_epochs), EEG_dataset(pretrain_val_dset, aug_config, standardize_epochs=standardize_epochs)
+            pretrain_dset, pretrain_val_dset = EEG_dataset(pretrain_dset, pretraining_setup=pretraining_setup, standardize_epochs=standardize_epochs), EEG_dataset(pretrain_val_dset, pretraining_setup=pretraining_setup, standardize_epochs=standardize_epochs)
         else:
             pretrain_dset, pretrain_val_dset = SeqCLR_dataset(pretrain_dset, window_length=int(chunk_duration), standardize_epochs=standardize_epochs), SeqCLR_dataset(pretrain_val_dset, window_length=int(chunk_duration), standardize_epochs=standardize_epochs)
 
@@ -157,13 +152,8 @@ def construct_eeg_datasets(data_path,
             finetune_train_dset.add_transform(To1020())
             finetune_val_dset.add_transform(To1020())
 
-        aug_config = { 
-            'jitter_scale_ratio': 1.1,
-            'jitter_ratio': 0.8,
-            'max_seg': 8
-        }
         if not seqclr_setup:
-            finetune_train_dset, finetune_val_dset = EEG_dataset(finetune_train_dset, aug_config, standardize_epochs=standardize_epochs, bendr_setup = bendr_setup), EEG_dataset(finetune_val_dset, aug_config, standardize_epochs=standardize_epochs, bendr_setup=bendr_setup)
+            finetune_train_dset, finetune_val_dset = EEG_dataset(finetune_train_dset, pretraining_setup=None, standardize_epochs=standardize_epochs, bendr_setup = bendr_setup), EEG_dataset(finetune_val_dset, pretraining_setup=None, standardize_epochs=standardize_epochs, bendr_setup=bendr_setup)
         else:
             finetune_train_dset, finetune_val_dset = SeqCLR_dataset(finetune_train_dset, fine_tune_mode=True, window_length=int(config.chunk_duration), standardize_epochs=standardize_epochs), SeqCLR_dataset(finetune_val_dset, fine_tune_mode=True, window_length=int(config.chunk_duration), standardize_epochs=standardize_epochs)
         
@@ -203,7 +193,7 @@ def construct_eeg_datasets(data_path,
             test_dset.add_transform(To1020())
 
         if not seqclr_setup:
-            test_dset = EEG_dataset(test_dset, aug_config, fine_tune_mode=False, standardize_epochs=standardize_epochs, bendr_setup = bendr_setup)
+            test_dset = EEG_dataset(test_dset, pretraining_setup=None, fine_tune_mode=False, standardize_epochs=standardize_epochs, bendr_setup = bendr_setup)
         else:
             test_dset = SeqCLR_dataset(test_dset, fine_tune_mode=True, standardize_epochs=standardize_epochs, window_length=int(config.chunk_duration))
         
@@ -379,14 +369,14 @@ def construct_epoch_dset(file, config):
 
 
 class EEG_dataset(TorchDataset):
-    def __init__(self, dn3_dset, augmentation_config, preloaded = False, fine_tune_mode = False, standardize_epochs = False, bendr_setup = False):
+    def __init__(self, dn3_dset, pretraining_setup = None, preloaded = False, fine_tune_mode = False, standardize_epochs = False, bendr_setup = False):
         super().__init__()
         self.dn3_dset = dn3_dset
-        self.aug_config = augmentation_config
         self.preloaded = preloaded
         self.fine_tune_mode = fine_tune_mode
         self.standardize_epochs = standardize_epochs
         self.bendr_setup = bendr_setup
+        self.pretraining_setup = pretraining_setup
 
     def __len__(self):
         return len(self.dn3_dset)
@@ -416,6 +406,23 @@ class EEG_dataset(TorchDataset):
             sig[1,:] = signal[0,:]
             sig[-2,:] = signal[1,:]
             signal = sig
+        
+        if not self.pretraining_setup is None:
+            if self.pretraining_setup == 'multiview':
+                # partition the dataset into two views
+                ch_size = np.random.randint(2, signal.size(1)-1)
+                random_channels = np.random.rand(signal.size(1)).argpartition(signal.size(1)-1)
+                view_1_idx = random_channels[:ch_size] # randomly select ch_size channels per input
+                view_2_idx = random_channels[ch_size:] # take the remaining as the second view
+                view_1 = signal[:, view_1_idx, :]
+                view_2 = signal[:, view_2_idx, :]
+            elif self.pretraining_setup == 'cpc':
+                # partition the x variables into two halves
+                time_length = signal.size(1)
+                half = time_length // 2
+                view_1 = signal[:, :half]
+                view_2 = signal[:, half:]
+            signal = [view_1, view_2]
     
         return signal, label
     

@@ -43,7 +43,7 @@ def resample_signal(data, labels, old_fs):
     return resampled_data.astype(np.int16), resampled_labels.astype(np.int16)
 
 
-def preprocess_EEG(folder,remove_files = False, out_folder = None):
+def preprocess_EEG(folder, remove_files = False, out_folder = None):
     files = glob.glob(f'{folder}/*')
     data = None
     labels = None
@@ -63,22 +63,27 @@ def preprocess_EEG(folder,remove_files = False, out_folder = None):
                 os.remove(file)
 
     if not data is None:
+        # first part of all files is unknown labels
         diff = np.diff(labels, axis = 0)
         cutoff = np.where(diff[:,4] != 0)[0]+1
         data, labels = data[:, cutoff[0]+1:], labels[cutoff[0]+1:,:]
 
+        # create mne file with info
         info = mne.create_info(s[:6], Fs, ch_types = 'eeg')
         mne_dataset = mne.io.RawArray(data, info)
 
-        events = process_labels_to_events(labels, label_names)
+        # convert labels to events with start and stop time
+        events = process_labels_to_events(labels)
         label_dict = dict(zip(np.arange(0,6), label_names))
         events = np.array(events)
-        event_dict = dict(zip(label_names, np.arange(0,6)))
+        #event_dict = dict(zip(label_names, np.arange(0,6)))
         f = lambda x: label_dict[x]
         annotations = mne.Annotations(onset = events[:,0]/Fs, duration = events[:,1]/Fs, description  = list(map(f,events[:,2])))
         mne_dataset.set_annotations(annotations)
 
+        # resample to 100 Hz
         mne_dataset.resample(sfreq = 100)
+        # create events of 30s to put in mne dataset
         epoch_events = mne.events_from_annotations(mne_dataset, chunk_duration = 30)
         info = mne.create_info(['STI'], mne_dataset.info['sfreq'], ['stim'])
         stim_data = np.zeros((1, len(mne_dataset.times)))
@@ -97,7 +102,7 @@ def relocate_EEG_data(folder, remove_files = True):
         os.remove(f'{folder}/data.mat')
         os.remove(f'{folder}/001_30s.fif')
 
-def process_labels_to_events(labels, label_names):
+def process_labels_to_events(labels):
     new_labels = np.argmax(labels, axis = 1)
     lab = new_labels[0]
     events = []
@@ -107,7 +112,7 @@ def process_labels_to_events(labels, label_names):
         while new_labels[i] == lab and i < len(new_labels)-1:
             i+=1
         end = i
-        dur = end +1 - start
+        dur = end + 1 - start
         events.append([start, dur, lab])
         lab = new_labels[i]
         start = i+1
@@ -118,7 +123,9 @@ def main(args):
     subjects = os.listdir(args.root_folder)
     for i, subject in enumerate(subjects):
         print('Processing subject', i+1, 'of', len(subjects))
+        # current subject folder
         subj_folder = os.path.join(args.root_folder, subject)
+        # location to put updated subject folder
         subj_out_folder = os.path.join(args.out_folder, subject)
         if not os.path.exists(subj_out_folder):
             os.makedirs(subj_out_folder, exist_ok = True)
