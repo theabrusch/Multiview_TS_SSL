@@ -46,24 +46,7 @@ class SSL_dataset(TensorDataset):
     def __getitem__(self, index):
         x = self.X[index]
         y = self.y[index]
-
-        if not self.pretraining_setup is None:
-            if self.pretraining_setup == 'multiview':
-                # partition the dataset into two views
-                ch_size = np.random.randint(2, x.size(0)-1)
-                random_channels = np.random.rand(x.size(0)).argpartition(x.size(0)-1)
-                view_1_idx = random_channels[:ch_size] # randomly select ch_size channels per input
-                view_2_idx = random_channels[ch_size:] # take the remaining as the second view
-                view_1 = x[view_1_idx, :]
-                view_2 = x[view_2_idx, :]
-            elif self.pretraining_setup == 'cpc':
-                # partition the x variables into two halves
-                time_length = x.size(1)
-                half = time_length // 2
-                view_1 = x[:, :half]
-                view_2 = x[:, half:]
-            x = [view_1, view_2]
-
+        
         return x, y
 
     def __len__(self):
