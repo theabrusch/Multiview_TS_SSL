@@ -497,7 +497,7 @@ def load_model(pretraining_setup, device, model_args, return_loss = True):
             loss_fn = CMCloss(temperature = model_args.temperature, criterion='contrastive').to(device)
         elif model_args.loss == 'COCOA':
             loss_fn = COCOAloss(temperature = model_args.temperature).to(device)
-        else:
-            loss_fn = None
+    else:
+        loss_fn = None
 
     return model, loss_fn
