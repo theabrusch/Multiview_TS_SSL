@@ -483,18 +483,21 @@ def evaluate_classifier(model,
     return acc, prec, rec, f, auc
 
 
-def load_model(pretraining_setup, device, model_args):
+def load_model(pretraining_setup, device, model_args, return_loss = True):
     torch.manual_seed(model_args.seed)
     if pretraining_setup == 'MPNN':
         model = Multiview(channels = 1, mpnn = True, **vars(model_args)).to(device)
     elif pretraining_setup == 'nonMPNN':
         model = Multiview(channels = 1, mpnn = False, **vars(model_args)).to(device)
 
-    if model_args.loss == 'time_loss':
-        loss_fn = CMCloss(temperature = model_args.temperature, criterion='TS2Vec').to(device)
-    elif model_args.loss == 'contrastive':
-        loss_fn = CMCloss(temperature = model_args.temperature, criterion='contrastive').to(device)
-    elif model_args.loss == 'COCOA':
-        loss_fn = COCOAloss(temperature = model_args.temperature).to(device)
+    if return_loss:
+        if model_args.loss == 'time_loss':
+            loss_fn = CMCloss(temperature = model_args.temperature, criterion='TS2Vec').to(device)
+        elif model_args.loss == 'contrastive':
+            loss_fn = CMCloss(temperature = model_args.temperature, criterion='contrastive').to(device)
+        elif model_args.loss == 'COCOA':
+            loss_fn = COCOAloss(temperature = model_args.temperature).to(device)
+        else:
+            loss_fn = None
 
     return model, loss_fn

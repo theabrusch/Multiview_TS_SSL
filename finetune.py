@@ -62,7 +62,7 @@ def main(args):
 
     for ft_loader, ft_val_loader in zip(finetune_loader, finetune_val_loader):
         wandb.init(project = 'MultiView_new', group = group, config = args)
-        model, loss_fn = load_model(args.model_setup, device, model_args)
+        model, loss_fn = load_model(args.model_setup, device, model_args, return_loss=False)
         train_samples = len(ft_loader.dataset)
         val_samples = len(ft_val_loader.dataset)
 
@@ -73,7 +73,7 @@ def main(args):
         model.remove_projector()
         if args.remove_mpnn:
             model.mpnn = False
-            
+
         model.update_classifier(num_classes, orig_channels=orig_channels, pool = args.pool, seed = args.seed)
         
         ft_output_path = output_path + f'/{train_samples}_samples'
