@@ -61,7 +61,7 @@ def main(args):
     print('Saving outputs in', output_path)
 
     for ft_loader, ft_val_loader in zip(finetune_loader, finetune_val_loader):
-        wandb.init(project = 'MultiView_new', group = group, config = args)
+        #wandb.init(project = 'MultiView_new', group = group, config = args)
         model, loss_fn = load_model(args.model_setup, device, model_args)
         train_samples = len(ft_loader.dataset)
         val_samples = len(ft_val_loader.dataset)
@@ -76,7 +76,7 @@ def main(args):
         ft_output_path = output_path + f'/{train_samples}_samples'
         os.makedirs(ft_output_path, exist_ok=True)
 
-        wandb.config.update({'Finetune samples': train_samples, 'Finetune validation samples': val_samples, 'Test samples': len(test_loader.dataset)})
+        #wandb.config.update({'Finetune samples': train_samples, 'Finetune validation samples': val_samples, 'Test samples': len(test_loader.dataset)})
 
         model.to(device)
 

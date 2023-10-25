@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from src.models.models import wave2vecblock
 import numpy as np
-from sklearn.metrics import balanced_accuracy_score, precision_recall_fscore_support
+from sklearn.metrics import balanced_accuracy_score, precision_recall_fscore_support, roc_auc_score
 from src.models.losses import COCOAloss, CMCloss
 import wandb
 
@@ -397,7 +397,7 @@ def finetune(model,
         val_loss = 0
         collect_y = []
         collect_pred = []
-
+        collect_logits = []
         model.eval()
         for i, data in enumerate(val_dataloader):
             x = data[0].to(device).float()
@@ -407,23 +407,32 @@ def finetune(model,
             val_loss += loss_.item()
             collect_y.append(y.detach().cpu().numpy())
             collect_pred.append(out.argmax(dim=1).detach().cpu().numpy())
+            collect_logits.append(F.softmax(out.detach(), -1).cpu().numpy())
         collect_y = np.concatenate(collect_y)
         collect_pred = np.concatenate(collect_pred)
+        collect_logits = np.concatenate(collect_logits)
+        
         acc = balanced_accuracy_score(collect_y, collect_pred)
         prec, rec, f, _ = precision_recall_fscore_support(collect_y, collect_pred)
+        # make y one-hot
+        collect_y = np.eye(collect_logits.shape[1])[collect_y]
+        auc = roc_auc_score(collect_y, collect_logits)
+
 
         if test_loader is not None:
-            test_acc, test_prec, test_rec, test_f = evaluate_classifier(model, test_loader, device)
+            test_acc, test_prec, test_rec, test_f, test_auc = evaluate_classifier(model, test_loader, device)
             wandb.log({'train_class_loss': train_loss, 
                         'val_class_loss': val_loss/(i+1), 
                         'val_acc': acc, 
                         'val_prec': np.mean(prec), 
                         'val_rec': np.mean(rec), 
                         'val_f': np.mean(f),
+                        'val_auc': auc,
                         'test_acc': test_acc,
                         'test_prec': np.mean(test_prec),
                         'test_rec': np.mean(test_rec),
-                        'test_f': np.mean(test_f)
+                        'test_f': np.mean(test_f),
+                        'test_auc': test_auc
                         })
         else:
             wandb.log({'train_class_loss': train_loss, 
@@ -454,17 +463,23 @@ def evaluate_classifier(model,
     model.eval()
     collect_y = []
     collect_pred = []
+    collect_logits = []
     for i, data in enumerate(test_loader):
         x = data[0].to(device).float()
         y = data[-1].to(device)
         out = model.forward(x, classify = True)
         collect_y.append(y.detach().cpu().numpy())
         collect_pred.append(out.argmax(dim=1).detach().cpu().numpy())
+        collect_logits.append(F.softmax(out.detach(), -1).cpu().numpy())
     collect_y = np.concatenate(collect_y)
     collect_pred = np.concatenate(collect_pred)
+    collect_logits = np.concatenate(collect_logits)
     acc = balanced_accuracy_score(collect_y, collect_pred)
     prec, rec, f, _ = precision_recall_fscore_support(collect_y, collect_pred)
-    return acc, prec, rec, f
+    # make y one-hot
+    collect_y = np.eye(collect_logits.shape[1])[collect_y]
+    auc = roc_auc_score(collect_y, collect_logits)
+    return acc, prec, rec, f, auc
 
 
 def load_model(pretraining_setup, device, model_args):
