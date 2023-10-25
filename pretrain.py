@@ -111,6 +111,7 @@ if __name__ == '__main__':
 
     # optimizer arguments
     parser.add_argument('--loss', type = str, default = 'time_loss', choices = ['time_loss', 'contrastive', 'COCOA'])
+    parser.add_argument('--temperature', type = float, default = 0.5)
     # whether or not to compute performance on test set during training
     parser.add_argument('--track_test_performance', type = eval, default = True)
     parser.add_argument('--learning_rate', type = float, default = 1e-3)
