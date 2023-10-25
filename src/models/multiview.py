@@ -4,6 +4,7 @@ import torch.nn.functional as F
 from src.models.models import wave2vecblock
 import numpy as np
 from sklearn.metrics import balanced_accuracy_score, precision_recall_fscore_support, roc_auc_score
+from sklearn.preprocessing import OneHotEncoder
 from src.models.losses import COCOAloss, CMCloss
 import wandb
 
@@ -466,7 +467,7 @@ def evaluate_classifier(model,
     collect_logits = []
     for i, data in enumerate(test_loader):
         x = data[0].to(device).float()
-        y = data[-1].to(device)
+        y = data[-1].to(device).long()
         out = model.forward(x, classify = True)
         collect_y.append(y.detach().cpu().numpy())
         collect_pred.append(out.argmax(dim=1).detach().cpu().numpy())
