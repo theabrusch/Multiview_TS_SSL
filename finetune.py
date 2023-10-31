@@ -26,10 +26,11 @@ def main(args):
     args.train_mode = 'finetune'
     # always normalize epochs channelwise within each window
     args.standardize_epochs = 'channelwise'
-    dset = args.data_path.split('/')[-2]
+    
     
     # load data 
-    if not 'sleep' in dset:
+    if not 'sleep' in args.data_path:
+        dset = args.data_path.split('/')[-2]
         finetune_loader, finetune_val_loader, test_loader, (channels, time_length, num_classes) = get_datasets(args.data_path, args.batchsize, pretraining_setup=None)
         finetune_loader = [finetune_loader]
         finetune_val_loader = [finetune_val_loader]
