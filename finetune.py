@@ -36,6 +36,7 @@ def main(args):
         finetune_val_loader = [finetune_val_loader]
     else:
         dset = args.data_path.split('.')[0]
+        args.finetune_path = args.data_path
         _, _, finetune_loader, finetune_val_loader, test_loader, (channels, time_length, num_classes) = construct_eeg_datasets(**vars(args))
     
     orig_channels = channels
