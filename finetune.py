@@ -113,8 +113,8 @@ def main(args):
         if not args.save_model:
             # delete ft_output_path folder to save memory
             shutil.rmtree(ft_output_path)
-        accuracy, prec, rec, f = evaluate_classifier(model, test_loader, device)
-        wandb.config.update({'Test accuracy': accuracy, 'Test precision': prec, 'Test recall': rec, 'Test f1': f})
+        accuracy, prec, rec, f, auc, f = evaluate_classifier(model, test_loader, device)
+        wandb.config.update({'Test accuracy': accuracy, 'Test precision': prec, 'Test recall': rec, 'Test f1': f, 'Test auc': auc})
         wandb.finish()
 
 if __name__ == '__main__':
