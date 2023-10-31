@@ -45,7 +45,7 @@ def main(args):
     wandb.init(project = 'MultiView_new', group = f'{dset}_{args.model_setup}_{args.pretraining_setup}', config = args)
 
     # setup model
-    model, loss_fn = load_model(args.model_setup, device, args)
+    model, loss_fn = load_model(device, args)
 
     if args.load_model:
         model.load_state_dict(torch.load(output_path, map_location=device))
@@ -81,13 +81,13 @@ if __name__ == '__main__':
     parser.add_argument('--job_id', type = str, default = '0')
     # whether or not to save finetuned models
     parser.add_argument('--load_model', type = eval, default = False)
-    parser.add_argument('--model_setup', type = str, default = 'MPNN', choices = ['MPNN', 'nonMPNN'])
+    parser.add_argument('--model_setup', type = str, default = 'average', choices = ['MPNN', 'nonMPNN', 'average'])
     parser.add_argument('--pretraining_setup', type = str, default = 'multiview', choices = ['multiview', 'cpc'])
     parser.add_argument('--seed', type = int, default = 42)
 
     # data arguments
     # path to config files. Remember to change paths in config files. 
-    parser.add_argument('--data_path', type = str, default = '/Users/theb/Desktop/data/chapman/') #sleepps18.yml /Users/theb/Desktop/data/HAR/
+    parser.add_argument('--data_path', type = str, default = '/Users/theb/Desktop/data/chapman/chapman_processed/') #sleepps18.yml /Users/theb/Desktop/data/HAR/
     parser.add_argument('--finetune_path', type = str, default = 'sleepedf.yml')
     # whether or not to sample balanced during finetuning
     parser.add_argument('--balanced_sampling', type = str, default = 'finetune')

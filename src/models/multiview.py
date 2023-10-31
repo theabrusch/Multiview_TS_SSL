@@ -122,7 +122,7 @@ class Multiview(nn.Module):
                  n_layers_proj = 1,
                  embedding_dim = 32,
                  loss = 'time_loss',
-                 mpnn = False, 
+                 model_setup = 'nonMPNN', 
                  num_message_passing_rounds = 2, 
                  feat_do = 0.1,
                  pool = 'adapt_avg',
@@ -149,11 +149,11 @@ class Multiview(nn.Module):
         else:
             self.projector = nn.Identity()
         
-        self.mpnn = mpnn
-        if mpnn:
+        self.mpnn = model_setup in ['MPNN', 'average']
+        if model_setup == 'MPNN':
             self.messagepassing = MPNN(out_dim, num_message_passing_rounds, feat_do)
-        else:
-            self.messagepassing = nn.Identity()
+        elif model_setup == 'average':
+            self.messagepassing = AverageMPNN()
     
     def forward(self, x, classify = False):
         b, ch, ts = x.shape
@@ -227,6 +227,15 @@ class Multiview(nn.Module):
             return loss
         else:
             return loss, *[torch.tensor(0)]*2
+
+class AverageMPNN(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, latents, message_from, message_to, view_id, ch, batch_size):
+        latents = latents.reshape(batch_size, ch, *latents.shape[1:])
+        latents = latents.mean(1).squeeze(1)
+        return latents
 
 class MPNN(nn.Module):
     def __init__(self, input_dim, num_message_passing_rounds, feat_do):
@@ -483,12 +492,9 @@ def evaluate_classifier(model,
     return acc, prec, rec, f, auc
 
 
-def load_model(pretraining_setup, device, model_args, return_loss = True):
+def load_model(device, model_args, return_loss = True):
     torch.manual_seed(model_args.seed)
-    if pretraining_setup == 'MPNN':
-        model = Multiview(channels = 1, mpnn = True, **vars(model_args)).to(device)
-    elif pretraining_setup == 'nonMPNN':
-        model = Multiview(channels = 1, mpnn = False, **vars(model_args)).to(device)
+    model = Multiview(channels = 1, **vars(model_args)).to(device)
 
     if return_loss:
         if model_args.loss == 'time_loss':
