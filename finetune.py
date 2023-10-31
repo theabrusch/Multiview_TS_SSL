@@ -49,6 +49,7 @@ def main(args):
         model_arg_path = pretrained_model_path + '/args.pkl'
         with open(model_arg_path, 'rb') as f:
             model_args = pickle.load(f) 
+        print('Finetuning model with args', model_args)
     else:
         output_path = f'finetuned_models/{args.model_setup}_scratch'
         group = f'{dset}_{args.model_setup}_scratch'
