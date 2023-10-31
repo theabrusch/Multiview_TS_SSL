@@ -37,6 +37,7 @@ def main(args):
     else:
         dset = args.data_path.split('.')[0]
         args.finetune_path = args.data_path
+        args.target_batchsize = args.batchsize
         _, _, finetune_loader, finetune_val_loader, test_loader, (channels, time_length, num_classes) = construct_eeg_datasets(**vars(args))
     
     orig_channels = channels
@@ -132,7 +133,7 @@ if __name__ == '__main__':
 
     # data arguments
     # path to config files. Remember to change paths in config files. 
-    parser.add_argument('--data_path', type = str, default = '/Users/theb/Desktop/data/Gesture/')
+    parser.add_argument('--data_path', type = str, default = 'sleepedf.yml')
     #parser.add_argument('--finetune_path', type = str, default = 'sleepedf.yml')
     # whether or not to sample balanced during finetuning
     parser.add_argument('--balanced_sampling', type = str, default = 'finetune')
@@ -155,9 +156,9 @@ if __name__ == '__main__':
 
     # eeg arguments
     # subsample number of subjects. If set to False, use all subjects, else set to integer
-    parser.add_argument('--sample_finetune_train_subjects', type = eval, default = False)
-    parser.add_argument('--sample_finetune_val_subjects', type = eval, default = False)
-    parser.add_argument('--sample_test_subjects', type = eval, default = False)
+    parser.add_argument('--sample_finetune_train_subjects', type = eval, default = 2)
+    parser.add_argument('--sample_finetune_val_subjects', type = eval, default = 2)
+    parser.add_argument('--sample_test_subjects', type = eval, default = 2)
 
     # optimizer arguments
     parser.add_argument('--loss', type = str, default = 'contrastive', choices = ['time_loss', 'contrastive', 'COCOA'])
