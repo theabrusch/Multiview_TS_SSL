@@ -66,7 +66,7 @@ def main(args):
 
     for ft_loader, ft_val_loader in zip(finetune_loader, finetune_val_loader):
         wandb.init(project = 'MultiView_new', group = group, config = args)
-        model, loss_fn = load_model(args.model_setup, device, model_args, return_loss=False)
+        model, loss_fn = load_model(device, model_args, return_loss=False)
         train_samples = len(ft_loader.dataset)
         val_samples = len(ft_val_loader.dataset)
 
@@ -113,7 +113,7 @@ def main(args):
         if not args.save_model:
             # delete ft_output_path folder to save memory
             shutil.rmtree(ft_output_path)
-        accuracy, prec, rec, f, auc, f = evaluate_classifier(model, test_loader, device)
+        accuracy, prec, rec, f, auc = evaluate_classifier(model, test_loader, device)
         wandb.config.update({'Test accuracy': accuracy, 'Test precision': prec, 'Test recall': rec, 'Test f1': f, 'Test auc': auc})
         wandb.finish()
 
@@ -127,7 +127,7 @@ if __name__ == '__main__':
     parser.add_argument('--optimize_encoder', type = eval, default = False)
     parser.add_argument('--pretraining_dset', type = str, default = 'HAR')
     parser.add_argument('--pretraining_setup', type = str, default = 'multiview', choices = ['multiview', 'cpc'])
-    parser.add_argument('--model_setup', type = str, default = 'MPNN', choices = ['MPNN', 'nonMPNN'])
+    parser.add_argument('--model_setup', type = str, default = 'MPNN', choices = ['MPNN', 'nonMPNN', 'average'])
 
     parser.add_argument('--seed', type = int, default = 42)
 
