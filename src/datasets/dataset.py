@@ -40,8 +40,8 @@ def get_datasets(data_path, batch_size, pretraining_setup, combine_all = False, 
 
 def get_simulated_data(samples, batchsize, n_sources = [10,5], groups_of_dep_var = [8, 2], n_states = 1000, sigma = 0.5, fs = 100, length = 30):
     simulator = multivariate_data_simulator(n_sources, groups_of_dep_var, n_states, sigma, fs, length)
-    train = torch.Tensor(simulator.generate(samples[0]))
-    val = torch.Tensor(simulator.generate(samples[1]))
+    train = torch.Tensor(simulator.generate(samples[0])).transpose(1,2)
+    val = torch.Tensor(simulator.generate(samples[1])).transpose(1,2)
 
     train_dset = SSL_dataset(train, torch.zeros(samples[0]))
     val_dset = SSL_dataset(val, torch.zeros(samples[1]))
