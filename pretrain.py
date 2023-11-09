@@ -2,7 +2,7 @@ import torch
 import argparse
 from src.models.multiview import load_model, pretrain
 from src.datasets.eegdataset import construct_eeg_datasets
-from src.datasets.dataset import get_datasets
+from src.datasets.dataset import get_datasets, get_simulated_data
 from torch.optim import AdamW
 import os
 import wandb
@@ -27,8 +27,13 @@ def main(args):
     # load data 
     #pretrain_loader, pretrain_val_loader, _, _, _, (channels, time_length, num_classes) = construct_eeg_datasets(**vars(args))
     if not 'sleep' in args.data_path:
-        dset = args.data_path.split('/')[-2]
-        pretrain_loader, pretrain_val_loader, pretrain_test_loader, (channels, time_length, num_classes) = get_datasets(args.data_path, args.batchsize, pretraining_setup=args.pretraining_setup, combine_all = dset == 'chapman', subsample = False)
+        if not args.data_path == 'simulated':
+            dset = args.data_path.split('/')[-2]
+            pretrain_loader, pretrain_val_loader, _, (channels, time_length, num_classes) = get_datasets(args.data_path, args.batchsize, pretraining_setup=args.pretraining_setup, combine_all = dset == 'chapman', subsample = False)
+        else:
+            dset = args.data_path
+            n_samples = [10000, 1000]
+            pretrain_loader, pretrain_val_loader, _, (channels, time_length, num_classes) = get_simulated_data(n_samples, args.batchsize)
     else:
         dset = args.data_path.split('.')[0]
         pretrain_loader, pretrain_val_loader, _, _, _, (channels, time_length, num_classes) = construct_eeg_datasets(**vars(args))
@@ -87,7 +92,7 @@ if __name__ == '__main__':
 
     # data arguments
     # path to config files. Remember to change paths in config files. 
-    parser.add_argument('--data_path', type = str, default = '/Users/theb/Desktop/data/chapman/chapman_processed/') #sleepps18.yml /Users/theb/Desktop/data/HAR/
+    parser.add_argument('--data_path', type = str, default = 'simulated') #sleepps18.yml /Users/theb/Desktop/data/HAR/ /Users/theb/Desktop/data/chapman/chapman_preprocessed/ simulated 
     parser.add_argument('--finetune_path', type = str, default = 'sleepedf.yml')
     # whether or not to sample balanced during finetuning
     parser.add_argument('--balanced_sampling', type = str, default = 'finetune')

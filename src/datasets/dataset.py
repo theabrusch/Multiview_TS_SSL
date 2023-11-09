@@ -2,6 +2,7 @@ from torch.utils.data import TensorDataset, DataLoader
 import torch
 from torch.nn import functional as F
 import numpy as np
+from src.datasets.simulated_data import multivariate_data_simulator
 
 def get_datasets(data_path, batch_size, pretraining_setup, combine_all = False, subsample=False):
     train = torch.load(data_path + 'train.pt')
@@ -36,6 +37,24 @@ def get_datasets(data_path, batch_size, pretraining_setup, combine_all = False, 
     test_loader = DataLoader(test_dset, batch_size = batch_size, drop_last=False)
 
     return train_loader, val_loader, test_loader, (channels, time_length, num_classes)
+
+def get_simulated_data(samples, batchsize, n_sources = [10,5], groups_of_dep_var = [8, 2], n_states = 1000, sigma = 0.5, fs = 100, length = 30):
+    simulator = multivariate_data_simulator(n_sources, groups_of_dep_var, n_states, sigma, fs, length)
+    train = torch.Tensor(simulator.generate(samples[0]))
+    val = torch.Tensor(simulator.generate(samples[1]))
+
+    train_dset = SSL_dataset(train, torch.zeros(samples[0]))
+    val_dset = SSL_dataset(val, torch.zeros(samples[1]))
+    train_loader = DataLoader(train_dset, batch_size = batchsize, shuffle = True, drop_last=False)
+    val_loader = DataLoader(val_dset, batch_size = batchsize, drop_last=False)
+
+    channels = train.shape[1]
+    time_length = train.shape[2]
+    num_classes = 1
+
+    return train_loader, val_loader, None, (channels, time_length, num_classes)
+
+
 
 class SSL_dataset(TensorDataset):
     def __init__(self, X, y, pretraining_setup = None):
