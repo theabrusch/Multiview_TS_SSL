@@ -2,7 +2,7 @@ import torch
 import argparse
 from src.models.multiview import load_model, finetune, evaluate_classifier
 from src.datasets.eegdataset import construct_eeg_datasets
-from src.datasets.dataset import get_datasets
+from src.datasets.dataset import get_datasets, get_simulated_data_finetuning
 from torch.optim import AdamW
 import numpy as np
 from sklearn.utils.class_weight import compute_class_weight
@@ -30,8 +30,13 @@ def main(args):
     
     # load data 
     if not 'sleep' in args.data_path:
-        dset = args.data_path.split('/')[-2]
-        finetune_loader, finetune_val_loader, test_loader, (channels, time_length, num_classes) = get_datasets(args.data_path, args.batchsize, pretraining_setup=None)
+        if not 'simulated' in args.data_path:
+            dset = args.data_path.split('/')[-2]
+            finetune_loader, finetune_val_loader, test_loader, (channels, time_length, num_classes) = get_datasets(args.data_path, args.batchsize, pretraining_setup=args.pretraining_setup, combine_all = dset == 'chapman', subsample = False)
+        else:
+            dset = args.data_path
+            n_samples = [10000, 1000, 5000]
+            finetune_loader, finetune_val_loader, test_loader, (channels, time_length, num_classes) = get_simulated_data_finetuning(args.data_path, n_samples, args.batchsize)
         finetune_loader = [finetune_loader]
         finetune_val_loader = [finetune_val_loader]
     else:
@@ -133,7 +138,7 @@ if __name__ == '__main__':
 
     # data arguments
     # path to config files. Remember to change paths in config files. 
-    parser.add_argument('--data_path', type = str, default = '/Users/theb/Desktop/data/chapman/chapman_processed/')
+    parser.add_argument('--data_path', type = str, default = 'simulated_multiview')
     #parser.add_argument('--finetune_path', type = str, default = 'sleepedf.yml')
     # whether or not to sample balanced during finetuning
     parser.add_argument('--balanced_sampling', type = str, default = 'finetune')
