@@ -103,7 +103,7 @@ class SSL_dataset(TensorDataset):
         self.y = y
         self.pretraining_setup = pretraining_setup
         if pretraining_setup == 'multiview':
-            self.X = X[:, :, :X.shape[1]//2]
+            self.X = X[:, :, :X.shape[2]//2]
 
     def __getitem__(self, index):
         x = self.X[index]
