@@ -97,8 +97,10 @@ class finetuning_simulator():
         self.length = length
         self.n_settings = n_states
         self.var_idx = np.arange(np.sum(groups_of_dep_var))
+        np.random.seed(42)
         np.random.shuffle(self.var_idx)
         if self.finetune_setup == 'simulated_cpc':
+            np.random.seed(42)
             self.y_state = np.random.randint(n_sources[0], np.sum(self.n_sources))
 
         np.random.seed(42)
