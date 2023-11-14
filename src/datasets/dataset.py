@@ -110,6 +110,8 @@ class SSL_dataset(TensorDataset):
     def __getitem__(self, index):
         x = self.X[index]
         y = self.y[index]
+        # normalize each epoch channelwise
+        x = (x - x.mean(axis=1, keepdims=True)) / x.std(axis=1, keepdims=True)
         
         return x, y
 

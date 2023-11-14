@@ -97,17 +97,19 @@ class finetuning_simulator():
         self.length = length
         self.n_settings = n_states
         self.var_idx = np.arange(np.sum(groups_of_dep_var))
+
+        # shuffle output variables
         np.random.seed(42)
         np.random.shuffle(self.var_idx)
-        if self.finetune_setup == 'simulated_cpc':
-            np.random.seed(42)
-            self.y_state = np.random.randint(n_sources[0], np.sum(self.n_sources))
+
+        # sample the source whose state will be the dependent variable
+        np.random.seed(42)
+        self.y_state = np.random.randint(n_sources[0], np.sum(self.n_sources))
 
         np.random.seed(42)
         em_matrix = np.random.normal(0, 1, (np.sum(groups_of_dep_var), np.sum(n_sources)))
         np.random.seed(42)
         self.source_frequencies = np.random.uniform(1, 50, (n_states, np.sum(n_sources)))
-
         k = 0
         j = 0
         self.emission_matrix = np.zeros((np.sum(groups_of_dep_var), np.sum(n_sources)))
@@ -123,22 +125,15 @@ class finetuning_simulator():
         phase_shift = np.expand_dims(np.random.uniform(0, 2*np.pi, n_samples), 1)
         # Generate the dependent variables
         x = np.zeros((n_samples, round(self.length*self.fs) , np.sum(self.groups_of_dep_var)))
-        if self.finetune_setup == 'simulated_multiview':
-            states = np.random.randint(0, self.n_settings, n_samples)
-        else:
-            states = np.random.randint(0, self.n_settings, (n_samples, np.sum(self.n_sources)))
+
+        states = np.random.randint(0, self.n_settings, (n_samples, np.sum(self.n_sources)))
 
         for k in range(np.sum(self.n_sources)):
-            if self.finetune_setup == 'simulated_multiview':
-                s = states
-            else:
-                s = states[:,k]
+            s = states[:,k]
             x += np.expand_dims(np.sin(np.expand_dims(self.source_frequencies[s, k],1) * t + phase_shift), 2) @ np.expand_dims(self.emission_matrix[:, k], 0)
         
         # Add noise
         x += np.random.normal(0, self.sigma, (n_samples, round(self.length*self.fs), np.sum(self.groups_of_dep_var)))
 
-        if self.finetune_setup == 'simulated_cpc':
-            states = states[:, self.y_state]
-
+        states = states[:, self.y_state]
         return x[:, :, self.var_idx], states
