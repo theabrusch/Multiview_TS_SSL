@@ -91,8 +91,8 @@ def get_simulated_data_finetuning(finetune_setup, samples, batchsize, n_sources 
     val_loader = DataLoader(val_dset, batch_size = batchsize, drop_last=False)
     test_loader = DataLoader(test_dset, batch_size = batchsize, drop_last=False)
 
-    channels = train.shape[1]
-    time_length = train.shape[2]
+    channels = X_train.shape[1]
+    time_length = X_train.shape[2]
     num_classes = 1
 
     return train_loader, val_loader, test_loader, (channels, time_length, num_classes)
