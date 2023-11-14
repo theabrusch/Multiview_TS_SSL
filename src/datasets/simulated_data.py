@@ -104,7 +104,10 @@ class finetuning_simulator():
 
         # sample the source whose state will be the dependent variable
         np.random.seed(42)
-        self.y_state = np.random.randint(n_sources[0], np.sum(self.n_sources))
+        if finetune_setup == 'simulated_cpc':
+            self.y_state = np.random.randint(n_sources[0], np.sum(self.n_sources))
+        else:
+            self.y_state = np.random.randint(0, np.sum(self.n_sources))
 
         np.random.seed(42)
         em_matrix = np.random.normal(0, 1, (np.sum(groups_of_dep_var), np.sum(n_sources)))
