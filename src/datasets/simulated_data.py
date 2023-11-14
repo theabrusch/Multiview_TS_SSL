@@ -96,13 +96,20 @@ class finetuning_simulator():
         self.fs = fs
         self.length = length
         self.n_settings = n_states
-        self.source_frequencies = np.zeros((n_states, np.sum(n_sources)))
-        self.emission_matrix = np.zeros((np.sum(groups_of_dep_var), np.sum(n_sources)))
+        self.var_idx = np.arange(np.sum(groups_of_dep_var))
+        np.random.shuffle(self.var_idx)
+        self.y_state = np.random.randint(0, np.sum(self.n_sources))
+
+        np.random.seed(42)
+        em_matrix = np.random.normal(0, 1, (np.sum(groups_of_dep_var), np.sum(n_sources)))
+        np.random.seed(42)
+        self.source_frequencies = np.random.uniform(1, 50, (n_states, np.sum(n_sources)))
+
         k = 0
         j = 0
+        self.emission_matrix = np.zeros((np.sum(groups_of_dep_var), np.sum(n_sources)))
         for source, group in zip(n_sources, groups_of_dep_var):
-            self.emission_matrix[j:j+group, k:k+source] = np.random.normal(0, 1, (group, source))
-            self.source_frequencies[:, k:k+source] = np.random.uniform(1, 50, (n_states, source))
+            self.emission_matrix[j:j+group, k:k+source] = em_matrix[j:j+group, k:k+source]
             j+=group
             k+=source
     
@@ -127,11 +134,8 @@ class finetuning_simulator():
         
         # Add noise
         x += np.random.normal(0, self.sigma, (n_samples, round(self.length*self.fs), np.sum(self.groups_of_dep_var)))
-        # randomly shuffle the variables
-        idx = np.arange(np.sum(self.groups_of_dep_var))
-        np.random.shuffle(idx)
 
         if self.finetune_setup == 'simulated_cpc':
-            y_state = np.random.randint(0, np.sum(self.n_sources))
-            states = states[:, y_state]
-        return x[:, :, idx], states
+            states = states[:, self.y_state]
+
+        return x[:, :, self.var_idx], states
