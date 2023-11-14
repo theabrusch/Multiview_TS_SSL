@@ -40,6 +40,8 @@ def get_datasets(data_path, batch_size, pretraining_setup, combine_all = False, 
 
 def get_simulated_data_pretraining(simulator_type, pretraining_setup, samples, batchsize, n_sources = [5,5], groups_of_dep_var = [8, 2], n_states = 1000, sigma = 0.5, fs = 100, length = 30):
     if simulator_type == 'simulated_cpc':
+        n_sources = np.sum(n_sources)*[1]
+        groups_of_dep_var = np.sum(groups_of_dep_var)*[1]
         simulator = cpc_data_simulator(n_sources, groups_of_dep_var, n_states, sigma, fs, length*2)
     elif simulator_type == 'simulated_multiview':
         if isinstance(n_sources, list):
