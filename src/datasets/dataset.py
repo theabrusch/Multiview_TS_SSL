@@ -93,7 +93,7 @@ def get_simulated_data_finetuning(finetune_setup, samples, batchsize, n_sources 
 
     channels = X_train.shape[1]
     time_length = X_train.shape[2]
-    num_classes = 1
+    num_classes = len(np.unique(y_train))
 
     return train_loader, val_loader, test_loader, (channels, time_length, num_classes)
 
