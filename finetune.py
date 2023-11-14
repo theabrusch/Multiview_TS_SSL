@@ -52,14 +52,17 @@ def main(args):
     if args.load_model:
         pretrained_model_path = f'pretrained_models/{args.pretraining_dset}_{args.model_setup}_{args.pretraining_setup}_{args.loss}'
         output_path = f'pretrained_models/{dset}_{args.model_setup}_{args.pretraining_setup}_{args.loss}'
-        group = f'{dset}_{args.model_setup}_{args.pretraining_setup}_{args.loss}'
+        group = f'{dset}_{args.model_setup}_{args.pretraining_setup}_{args.loss}' #wandb group
+
+        # load model args from pretrained model
         model_arg_path = pretrained_model_path + '/args.pkl'
         with open(model_arg_path, 'rb') as f:
             model_args = pickle.load(f) 
         print('Finetuning model with args', model_args)
     else:
         output_path = f'finetuned_models/{args.model_setup}_scratch'
-        group = f'{dset}_{args.model_setup}_scratch'
+        group = f'{dset}_{args.model_setup}_scratch' #wandb group
+        # use args from command line
         model_args = args
         model_args.orig_channels = channels
         model_args.time_length = time_length
@@ -71,38 +74,32 @@ def main(args):
 
     for ft_loader, ft_val_loader in zip(finetune_loader, finetune_val_loader):
         wandb.init(project = 'MultiView_new', group = group, config = args)
-        model, loss_fn = load_model(device, model_args, return_loss=False)
         train_samples = len(ft_loader.dataset)
         val_samples = len(ft_val_loader.dataset)
-
-        if args.load_model:
-            pretrained_model_path = pretrained_model_path + '/pretrained_model.pt'
-            model.load_state_dict(torch.load(pretrained_model_path, map_location=device))
-            
-        model.remove_projector()
-        if args.remove_mpnn:
-            model.mpnn = False
-
-        model.update_classifier(num_classes, orig_channels=orig_channels, pool = args.pool, seed = args.seed)
-        
+        wandb.config.update({'Finetune samples': train_samples, 'Finetune validation samples': val_samples, 'Test samples': len(test_loader.dataset)})
+        # make sure to save outputs in a new folder
         ft_output_path = output_path + f'/{train_samples}_samples'
         os.makedirs(ft_output_path, exist_ok=True)
 
-        wandb.config.update({'Finetune samples': train_samples, 'Finetune validation samples': val_samples, 'Test samples': len(test_loader.dataset)})
+        # load model
+        model, loss_fn = load_model(device, model_args, return_loss=False)
+        if args.load_model:
+            pretrained_model_path = pretrained_model_path + '/pretrained_model.pt'
+            model.load_state_dict(torch.load(pretrained_model_path, map_location=device))
+        
+        # update model parameters for finetuning
+        model.remove_projector()
+        if args.remove_mpnn: # remove the message passing network
+            model.mpnn = False
+            args.optimize_mpnn = False
+        # update the classifier to the number of classes in the finetuning dataset
+        model.update_classifier(num_classes, orig_channels=orig_channels, pool = args.pool, seed = args.seed)
+        # freeze parameters
+        model.freeze_parameters(optimize_encoder=args.optimize_encoder, optimize_mpnn=args.optimize_mpnn)
 
         model.to(device)
-
-        if args.optimize_encoder:
-            optimizer = AdamW(model.parameters(), lr = args.ft_learning_rate, weight_decay=args.weight_decay)
-        else:
-            optimizer = AdamW(model.classifier.parameters(), lr = args.ft_learning_rate, weight_decay=args.weight_decay)
-        
-        #if not args.balanced_sampling == 'finetune' or args.balanced_sampling == 'both':
-        #    targets = ft_loader.dataset.dn3_dset.get_targets()
-        #    weights = torch.tensor(compute_class_weight('balanced', classes = np.unique(targets), y = targets)).float().to(device)
-        #    wandb.config.update({'Target distribution': np.unique(targets, return_counts=True)[-1]})
-        #else:
-        #    weights = None
+        # only optimize parameters that require grad
+        optimizer = AdamW(filter(lambda p: p.requires_grad, model.parameters()), lr = args.ft_learning_rate, weight_decay=args.weight_decay)
         
         finetune(model,
                 ft_loader,
@@ -115,6 +112,7 @@ def main(args):
                 early_stopping_criterion=args.early_stopping_criterion,
                 backup_path=ft_output_path,
         )
+
         if not args.save_model:
             # delete ft_output_path folder to save memory
             shutil.rmtree(ft_output_path)
@@ -130,6 +128,7 @@ if __name__ == '__main__':
     parser.add_argument('--save_model', type = eval, default = False)
     parser.add_argument('--load_model', type = eval, default = False)
     parser.add_argument('--optimize_encoder', type = eval, default = False)
+    parser.add_argument('--optimize_mpnn', type = eval, default = False)
     parser.add_argument('--pretraining_dset', type = str, default = 'HAR')
     parser.add_argument('--pretraining_setup', type = str, default = 'multiview', choices = ['multiview', 'cpc'])
     parser.add_argument('--model_setup', type = str, default = 'MPNN', choices = ['MPNN', 'nonMPNN', 'average'])

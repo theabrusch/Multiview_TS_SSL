@@ -195,6 +195,14 @@ class Multiview(nn.Module):
             pool = self.pool
         self.classifier = TimeClassifier(in_features = self.out_dim, num_classes = num_classes, pool = pool, orig_channels = orig_channels)
 
+    def freeze_parameters(self, optimize_encoder = True, optimize_MPNN = True):
+        if not optimize_encoder:
+            for param in self.wave2vec.parameters():
+                param.requires_grad = False
+        if not optimize_MPNN:
+            for param in self.messagepassing.parameters():
+                param.requires_grad = False
+
     def train_step(self, x, loss_fn, device):
 
         if self.pretraining_setup == 'multiview':
