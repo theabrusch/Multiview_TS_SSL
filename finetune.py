@@ -34,7 +34,7 @@ def main(args):
 
     if args.load_model:
         pretrained_model_path = f'pretrained_models/{args.pretraining_dset}_{args.model_setup}_{args.pretraining_setup}_{args.loss}'
-        output_path = f'pretrained_models/{dset}_{args.model_setup}_{args.pretraining_setup}_{args.loss}'
+        output_path = f'finetuned_models/{dset}_{args.model_setup}_{args.pretraining_setup}_{args.loss}'
         group = f'{dset}_{args.model_setup}_{args.pretraining_setup}_{args.loss}' #wandb group
 
         # load model args from pretrained model
