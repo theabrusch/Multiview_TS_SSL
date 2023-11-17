@@ -2,7 +2,7 @@ import torch
 import argparse
 from src.models.multiview import load_model, finetune, evaluate_classifier
 from src.datasets.eegdataset import construct_eeg_datasets
-from src.datasets.dataset import get_datasets, get_simulated_data_finetuning
+from src.datasets.dataset import get_dataloaders_finetuning, get_simulated_data_finetuning
 from torch.optim import AdamW
 import numpy as np
 from sklearn.utils.class_weight import compute_class_weight
@@ -27,24 +27,7 @@ def main(args):
     # always normalize epochs channelwise within each window
     args.standardize_epochs = 'channelwise'
     
-    
-    # load data 
-    if not 'sleep' in args.data_path:
-        if not 'simulated' in args.data_path:
-            dset = args.data_path.split('/')[-2]
-            finetune_loader, finetune_val_loader, test_loader, (channels, time_length, num_classes) = get_datasets(args.data_path, args.batchsize, pretraining_setup=args.pretraining_setup, combine_all = dset == 'chapman', subsample = False)
-        else:
-            dset = args.data_path
-            n_samples = [10000, 1000, 5000]
-            finetune_loader, finetune_val_loader, test_loader, (channels, time_length, num_classes) = get_simulated_data_finetuning(args.data_path, n_samples, args.batchsize)
-        finetune_loader = [finetune_loader]
-        finetune_val_loader = [finetune_val_loader]
-    else:
-        dset = args.data_path.split('.')[0]
-        args.finetune_path = args.data_path
-        args.target_batchsize = args.batchsize
-        _, _, finetune_loader, finetune_val_loader, test_loader, (channels, time_length, num_classes) = construct_eeg_datasets(**vars(args))
-    
+    finetune_loader, finetune_val_loader, test_loader, dset, (channels, time_length, num_classes) = get_dataloaders_finetuning(args, balanced_sampling=args.balanced_sampling, sample_generator=args.sample_generator, seed = args.seed)
     orig_channels = channels
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
@@ -82,7 +65,7 @@ def main(args):
         os.makedirs(ft_output_path, exist_ok=True)
 
         # load model
-        model, loss_fn = load_model(device, model_args, return_loss=False)
+        model, _ = load_model(device, model_args, return_loss=False)
         if args.load_model:
             pretrained_model_path = pretrained_model_path + '/pretrained_model.pt'
             model.load_state_dict(torch.load(pretrained_model_path, map_location=device))
@@ -137,10 +120,9 @@ if __name__ == '__main__':
 
     # data arguments
     # path to config files. Remember to change paths in config files. 
-    parser.add_argument('--data_path', type = str, default = 'simulated_multiview')
-    #parser.add_argument('--finetune_path', type = str, default = 'sleepedf.yml')
+    parser.add_argument('--data_path', type = str, default = 'sleepedf_local.yml')
     # whether or not to sample balanced during finetuning
-    parser.add_argument('--balanced_sampling', type = str, default = 'finetune')
+    parser.add_argument('--balanced_sampling', type = eval, default = True)
     # number of samples to finetune on. Can be list for multiple runs
     parser.add_argument('--sample_generator', type = eval, nargs = '+', default = [10, 20, None])
 

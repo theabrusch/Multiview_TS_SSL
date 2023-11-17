@@ -1,48 +1,35 @@
 import torch
 from torch.utils.data import Dataset as TorchDataset
-from torch.utils.data import DataLoader
-from torch.utils.data.sampler import WeightedRandomSampler
 import os
-from fnmatch import fnmatch
 import glob
-import json
 import mne 
 from dn3.configuratron import ExperimentConfig
 from dn3.data.dataset import EpochTorchRecording, Thinker, Dataset, DatasetInfo
 from dn3.transforms.instance import To1020, MappingDeep1010, TemporalInterpolation
 import numpy as np
-from scipy.signal import filtfilt, butter, sosfiltfilt
+from scipy.signal import butter, sosfiltfilt
 from sklearn.model_selection import train_test_split
 import warnings
 warnings.filterwarnings("ignore", category=np.VisibleDeprecationWarning) 
 
 def construct_eeg_datasets(data_path, 
                            pretraining_setup = None,
-                           batchsize = None, 
                            standardize_epochs = False,
-                           balanced_sampling = False,
                            sample_pretrain_subjects = False, 
                            sample_finetune_train_subjects = False,
                            sample_finetune_val_subjects = False,
                            sample_test_subjects = False,
                            train_mode = 'pretrain',
-                           sample_generator = False,
                            bendr_setup = False,
                            load_original_bendr = False,
                            seqclr_setup = False,
                            upsample_bendr = False,
-                           seed = None,
                            chunk_duration = '30',
                            **kwargs):
     experiment = ExperimentConfig(data_path)
     dset = data_path.split('/')[-1].strip('.yml').split('_')[0]
     config = experiment.datasets[dset]
     config.normalize = False
-
-    if balanced_sampling:
-        config.balanced_sampling = True
-    else:
-        config.balanced_sampling = False
 
     if bendr_setup and upsample_bendr:
         config.chunk_duration = chunk_duration
@@ -101,7 +88,6 @@ def construct_eeg_datasets(data_path,
             train_dset, val_dset = SeqCLR_dataset(train_dset, fine_tune_mode=True, window_length=int(config.chunk_duration), standardize_epochs=standardize_epochs), SeqCLR_dataset(val_dset, fine_tune_mode=True, window_length=int(config.chunk_duration), standardize_epochs=standardize_epochs)
         # get test set
         print('Loading test data')
-        config.balanced_sampling = False
         test_thinkers = load_thinkers(config, sample_subjects = sample_test_subjects, subjects = test_subjects)
         test_dset = Dataset(test_thinkers, dataset_info=info)
 
@@ -113,9 +99,7 @@ def construct_eeg_datasets(data_path,
         else:
             test_dset = SeqCLR_dataset(test_dset, fine_tune_mode=True, standardize_epochs=standardize_epochs, window_length=int(config.chunk_duration))
 
-        test_loader = DataLoader(test_dset, batch_size=batchsize, shuffle = True, num_workers=2)
         num_classes = len(np.unique(test_dset.dn3_dset.get_targets()))
-
         return train_dset, val_dset, test_dset, (len(config.picks), config.tlen*100, num_classes)
     
 def divide_thinkers(thinkers):
@@ -280,7 +264,7 @@ class EEG_dataset(TorchDataset):
     def __init__(self, dn3_dset, pretraining_setup = None, preloaded = False, fine_tune_mode = False, standardize_epochs = False, bendr_setup = False):
         super().__init__()
         self.dn3_dset = dn3_dset
-        self.y = dn3_dset.dn3_dset.get_targets()
+        self.y = dn3_dset.get_targets()
         self.preloaded = preloaded
         self.fine_tune_mode = fine_tune_mode
         self.standardize_epochs = standardize_epochs

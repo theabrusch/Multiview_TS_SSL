@@ -2,7 +2,7 @@ import torch
 import argparse
 from src.models.multiview import load_model, pretrain
 from src.datasets.eegdataset import construct_eeg_datasets
-from src.datasets.dataset import get_datasets, get_simulated_data_pretraining
+from src.datasets.dataset import get_dataloaders_pretraining, get_simulated_data_pretraining
 from torch.optim import AdamW
 import os
 import wandb
@@ -25,18 +25,7 @@ def main(args):
     args.standardize_epochs = 'channelwise'
     
     # load data 
-    #pretrain_loader, pretrain_val_loader, _, _, _, (channels, time_length, num_classes) = construct_eeg_datasets(**vars(args))
-    if not 'sleep' in args.data_path:
-        if not 'simulated' in args.data_path:
-            dset = args.data_path.split('/')[-2]
-            pretrain_loader, pretrain_val_loader, _, (channels, time_length, num_classes) = get_datasets(args.data_path, args.batchsize, pretraining_setup=args.pretraining_setup, combine_all = dset == 'chapman', subsample = False)
-        else:
-            dset = args.data_path
-            n_samples = [10000, 1000]
-            pretrain_loader, pretrain_val_loader, _, (channels, time_length, num_classes) = get_simulated_data_pretraining(args.data_path, args.pretraining_setup, n_samples, args.batchsize)
-    else:
-        dset = args.data_path.split('.')[0]
-        pretrain_loader, pretrain_val_loader, _, _, _, (channels, time_length, num_classes) = construct_eeg_datasets(**vars(args))
+    pretrain_loader, pretrain_val_loader, dset, (channels, time_length, num_classes) = get_dataloaders_pretraining(args, subsample = False)
         
     args.orig_channels, args.time_length, args.num_classes = channels, time_length, num_classes
     
@@ -92,10 +81,9 @@ if __name__ == '__main__':
 
     # data arguments
     # path to config files. Remember to change paths in config files. 
-    parser.add_argument('--data_path', type = str, default = 'simulated_multiview') #sleepps18.yml /Users/theb/Desktop/data/HAR/ /Users/theb/Desktop/data/chapman/chapman_preprocessed/ simulated 
-    parser.add_argument('--finetune_path', type = str, default = 'sleepedf.yml')
+    parser.add_argument('--data_path', type = str, default = 'sleepps18.yml') #sleepps18.yml /Users/theb/Desktop/data/HAR/ /Users/theb/Desktop/data/chapman/chapman_preprocessed/ simulated 
     # whether or not to sample balanced during finetuning
-    parser.add_argument('--balanced_sampling', type = str, default = 'finetune')
+    parser.add_argument('--balanced_sampling', type = str, default = False)
     # number of samples to finetune on. Can be list for multiple runs
 
     # model arguments
