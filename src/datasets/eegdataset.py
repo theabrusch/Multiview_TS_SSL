@@ -17,18 +17,15 @@ import warnings
 warnings.filterwarnings("ignore", category=np.VisibleDeprecationWarning) 
 
 def construct_eeg_datasets(data_path, 
-                           finetune_path,
                            pretraining_setup = None,
                            batchsize = None, 
-                           target_batchsize = None,
                            standardize_epochs = False,
-                           balanced_sampling = 'None',
+                           balanced_sampling = False,
                            sample_pretrain_subjects = False, 
                            sample_finetune_train_subjects = False,
                            sample_finetune_val_subjects = False,
                            sample_test_subjects = False,
-                           exclude_subjects = None,
-                           train_mode = 'both',
+                           train_mode = 'pretrain',
                            sample_generator = False,
                            bendr_setup = False,
                            load_original_bendr = False,
@@ -41,7 +38,8 @@ def construct_eeg_datasets(data_path,
     dset = data_path.split('/')[-1].strip('.yml').split('_')[0]
     config = experiment.datasets[dset]
     config.normalize = False
-    if balanced_sampling == 'pretrain' or balanced_sampling == 'both':
+
+    if balanced_sampling:
         config.balanced_sampling = True
     else:
         config.balanced_sampling = False
@@ -60,129 +58,47 @@ def construct_eeg_datasets(data_path,
     
     if seqclr_setup:
         config.tlen = int(chunk_duration) + 2
-       
-    if not exclude_subjects is None:
-        config.exclude_people = exclude_subjects
     
-    if finetune_path == 'same':
-        split_path = data_path.removesuffix('.yml') + '_splits.txt'
-        with open(split_path, 'r') as split_file:
-            splits = json.load(split_file)
-        pretrain_subjects = splits['pretrain']
-    else:
-        pretrain_subjects = None
+    pretrain_subjects = None
     info = DatasetInfo(config.name, config.data_max, config.data_min, config._excluded_people,
                             targets=config._targets if config._targets is not None else len(config._unique_events))
     # construct pretraining datasets
-    if train_mode == 'pretrain' or train_mode == 'both':
+    if train_mode == 'pretrain':
         print('Loading pre-training data')
         pretrain_thinkers = load_thinkers(config, sample_subjects=sample_pretrain_subjects, subjects = pretrain_subjects)
         pretrain_train_thinkers, pretrain_val_thinkers = divide_thinkers(pretrain_thinkers)
         pretrain_dset, pretrain_val_dset = Dataset(pretrain_train_thinkers, dataset_info=info), Dataset(pretrain_val_thinkers, dataset_info=info)
 
         if not seqclr_setup:
-            pretrain_dset, pretrain_val_dset = EEG_dataset(pretrain_dset, pretraining_setup=pretraining_setup, standardize_epochs=standardize_epochs), EEG_dataset(pretrain_val_dset, pretraining_setup=pretraining_setup, standardize_epochs=standardize_epochs)
+            train_dset, val_dset = EEG_dataset(pretrain_dset, pretraining_setup=pretraining_setup, standardize_epochs=standardize_epochs), EEG_dataset(pretrain_val_dset, pretraining_setup=pretraining_setup, standardize_epochs=standardize_epochs)
         else:
-            pretrain_dset, pretrain_val_dset = SeqCLR_dataset(pretrain_dset, window_length=int(chunk_duration), standardize_epochs=standardize_epochs), SeqCLR_dataset(pretrain_val_dset, window_length=int(chunk_duration), standardize_epochs=standardize_epochs)
+            train_dset, val_dset = SeqCLR_dataset(pretrain_dset, window_length=int(chunk_duration), standardize_epochs=standardize_epochs), SeqCLR_dataset(pretrain_val_dset, window_length=int(chunk_duration), standardize_epochs=standardize_epochs)
 
-        if config.balanced_sampling:
-            if sample_generator:
-                sample_weights, counts = fixed_label_balance(pretrain_dset, sample_size = sample_generator, seed=seed)
-            else:
-                sample_weights, counts = get_label_balance(pretrain_dset)
 
-            pretrain_sampler = WeightedRandomSampler(sample_weights, len(counts) * int(counts.min()), replacement=False)
-            pretrain_loader = DataLoader(pretrain_dset, batch_size=batchsize, sampler=pretrain_sampler, num_workers=2)
-        else:
-            pretrain_loader = DataLoader(pretrain_dset, batch_size=batchsize, shuffle = True, num_workers=2)
-
-        pretrain_loader, pretrain_val_loader = DataLoader(pretrain_dset, batch_size=batchsize, shuffle = True, num_workers=2), DataLoader(pretrain_val_dset, batch_size=batchsize, shuffle = True, num_workers=2)
-    else:
-        pretrain_loader, pretrain_val_loader = None, None
+        #train_loader, val_loader = DataLoader(pretrain_dset, batch_size=batchsize, shuffle = True, num_workers=2), DataLoader(pretrain_val_dset, batch_size=batchsize, shuffle = True, num_workers=2)
+        test_dset = None
+        num_classes = 1
+        return train_dset, val_dset, (len(config.picks), config.tlen*100, num_classes)
     
     # construct finetuning dataset
-    if train_mode == 'finetune' or train_mode == 'both':
+    if train_mode == 'finetune':
+
+        finetunesubjects, test_subjects = divide_subjects(config, sample_finetune_train_subjects, sample_test_subjects, subjects = None, test_size=config.test_size)
         
-        #sample_subjects = int(sample_subjects/2) if sample_subjects else sample_subjects
-        if balanced_sampling == 'finetune' or balanced_sampling == 'both':
-            config.balanced_sampling = True
-        else:
-            config.balanced_sampling = False
-        if not finetune_path == 'same':
-            experiment = ExperimentConfig(finetune_path)
-            dset = finetune_path.split('/')[-1].strip('.yml').split('_')[0]
-            config = experiment.datasets[dset]
-            config.normalize = False
-
-            if balanced_sampling == 'finetune' or balanced_sampling == 'both':
-                config.balanced_sampling = True
-            else:
-                config.balanced_sampling = False
-
-            finetunesubjects, test_subjects = divide_subjects(config, sample_finetune_train_subjects, sample_test_subjects, subjects = None, test_size=config.test_size)
-        else:
-            config.chunk_duration = str(config.tlen)
-            finetunesubjects = splits['finetune']
-            test_subjects = splits['test']
-        info = DatasetInfo(config.name, config.data_max, config.data_min, config._excluded_people,
-                            targets=config._targets if config._targets is not None else len(config._unique_events))
-
-        if bendr_setup and upsample_bendr:
-            config.chunk_duration = chunk_duration
-        else:
-            config.upsample = False
-
-        if load_original_bendr:
-            config.upsample = True
-            config.deep1010 = True
-            bendr_setup = False
-            standardize_epochs = False
-    
-
-        if seqclr_setup:
-            config.tlen = int(chunk_duration)
-
         print('Loading finetuning data')
         train_subjs, val_subjs = divide_subjects(config, sample_finetune_train_subjects, sample_finetune_val_subjects, subjects = finetunesubjects, test_size=config.val_size)
         finetune_train_thinkers = load_thinkers(config, sample_subjects=False, subjects = train_subjs)
         finetune_val_thinkers = load_thinkers(config, sample_subjects=False, subjects = val_subjs)
-        finetune_train_dset, finetune_val_dset = Dataset(finetune_train_thinkers, dataset_info=info), Dataset(finetune_val_thinkers, dataset_info=info)
+        train_dset, val_dset = Dataset(finetune_train_thinkers, dataset_info=info), Dataset(finetune_val_thinkers, dataset_info=info)
 
         if load_original_bendr:
-            finetune_train_dset.add_transform(To1020())
-            finetune_val_dset.add_transform(To1020())
+            train_dset.add_transform(To1020())
+            val_dset.add_transform(To1020())
 
         if not seqclr_setup:
-            finetune_train_dset, finetune_val_dset = EEG_dataset(finetune_train_dset, pretraining_setup=None, standardize_epochs=standardize_epochs, bendr_setup = bendr_setup), EEG_dataset(finetune_val_dset, pretraining_setup=None, standardize_epochs=standardize_epochs, bendr_setup=bendr_setup)
+            train_dset, val_dset = EEG_dataset(train_dset, pretraining_setup=None, standardize_epochs=standardize_epochs, bendr_setup = bendr_setup), EEG_dataset(val_dset, pretraining_setup=None, standardize_epochs=standardize_epochs, bendr_setup=bendr_setup)
         else:
-            finetune_train_dset, finetune_val_dset = SeqCLR_dataset(finetune_train_dset, fine_tune_mode=True, window_length=int(config.chunk_duration), standardize_epochs=standardize_epochs), SeqCLR_dataset(finetune_val_dset, fine_tune_mode=True, window_length=int(config.chunk_duration), standardize_epochs=standardize_epochs)
-        
-        if config.balanced_sampling:
-            if sample_generator:
-                # compute sample weights for train and val sets
-                sample_weights_train, length_train = fixed_label_balance(finetune_train_dset, sample_size = sample_generator, seed = seed)
-                if isinstance(sample_generator, list):
-                    val_seed_generator = [int(sg*1) if not sg is None else sg for sg in sample_generator]
-                elif isinstance(sample_generator, int):
-                    val_seed_generator = int(sample_generator*1)
-
-                sample_weights_val, length_val = fixed_label_balance(finetune_val_dset, sample_size = val_seed_generator, seed=seed)
-            else:
-                sample_weights_train, length_train = get_label_balance(finetune_train_dset)
-                sample_weights_val, length_val = get_label_balance(finetune_val_dset)
-
-            finetune_loader = []
-            finetune_val_loader = []
-            for i in range(sample_weights_train.shape[1]):
-                finetune_sampler = WeightedRandomSampler(sample_weights_train[:,i], int(length_train[i]), replacement=False)
-                finetune_loader.append(DataLoader(finetune_train_dset, batch_size=target_batchsize, sampler=finetune_sampler, num_workers=2))
-
-                finetune_val_sampler = WeightedRandomSampler(sample_weights_val[:,i], int(length_val[i]), replacement=False)
-                finetune_val_loader.append(DataLoader(finetune_val_dset, batch_size=target_batchsize, sampler=finetune_val_sampler, num_workers=2))
-        else:
-            finetune_loader = DataLoader(finetune_train_dset, batch_size=target_batchsize, shuffle = True, num_workers=2)
-            finetune_val_loader = DataLoader(finetune_val_dset, batch_size=target_batchsize, shuffle = True, num_workers=2)
-        
+            train_dset, val_dset = SeqCLR_dataset(train_dset, fine_tune_mode=True, window_length=int(config.chunk_duration), standardize_epochs=standardize_epochs), SeqCLR_dataset(val_dset, fine_tune_mode=True, window_length=int(config.chunk_duration), standardize_epochs=standardize_epochs)
         # get test set
         print('Loading test data')
         config.balanced_sampling = False
@@ -196,20 +112,12 @@ def construct_eeg_datasets(data_path,
             test_dset = EEG_dataset(test_dset, pretraining_setup=None, fine_tune_mode=False, standardize_epochs=standardize_epochs, bendr_setup = bendr_setup)
         else:
             test_dset = SeqCLR_dataset(test_dset, fine_tune_mode=True, standardize_epochs=standardize_epochs, window_length=int(config.chunk_duration))
-        
-        test = False
-        if test:
-            sample_weights_val, length_val = fixed_label_balance(test_dset, sample_size = 10, seed=seed)
-            finetune_sampler = WeightedRandomSampler(sample_weights_train[:,i], int(length_train[i]), replacement=False)
-            test_loader = DataLoader(test_dset, batch_size=target_batchsize, shuffle = True, sampler=finetune_sampler, num_workers=2)
-        else:
-            test_loader = DataLoader(test_dset, batch_size=target_batchsize, shuffle = True, num_workers=2)
+
+        test_loader = DataLoader(test_dset, batch_size=batchsize, shuffle = True, num_workers=2)
         num_classes = len(np.unique(test_dset.dn3_dset.get_targets()))
-    else:
-        finetune_loader, finetune_val_loader, test_loader, num_classes = None, None, None, 5
 
-    return pretrain_loader, pretrain_val_loader,finetune_loader, finetune_val_loader, test_loader, (len(config.picks), config.tlen*100, num_classes)
-
+        return train_dset, val_dset, test_dset, (len(config.picks), config.tlen*100, num_classes)
+    
 def divide_thinkers(thinkers):
     train, val = train_test_split(list(thinkers.keys()), test_size = 0.2, random_state=0)
     train_thinkers = dict()
@@ -372,6 +280,7 @@ class EEG_dataset(TorchDataset):
     def __init__(self, dn3_dset, pretraining_setup = None, preloaded = False, fine_tune_mode = False, standardize_epochs = False, bendr_setup = False):
         super().__init__()
         self.dn3_dset = dn3_dset
+        self.y = dn3_dset.dn3_dset.get_targets()
         self.preloaded = preloaded
         self.fine_tune_mode = fine_tune_mode
         self.standardize_epochs = standardize_epochs
@@ -418,6 +327,7 @@ class SeqCLR_dataset(TorchDataset):
                  standardize_epochs = False):
         super().__init__()
         self.dn3_dset = dn3_dset
+        self.y = dn3_dset.dn3_dset.get_targets()
         self.fine_tune_mode = fine_tune_mode
         self.standardize_epochs = standardize_epochs
         self.window_length = window_length*100
