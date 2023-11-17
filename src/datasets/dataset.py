@@ -31,7 +31,7 @@ def get_dataloaders_finetuning(args, balanced_sampling, sample_generator = None,
             train_dset, val_dset, test_dset, (channels, time_length, num_classes) = load_numpy_files(args.data_path, args.batchsize, pretraining_setup='None', combine_all = dset == 'chapman')
         else:
             dset = args.data_path
-            n_samples = [10, 10, 10]
+            n_samples = [10000, 1000, 1000]
             balanced_sampling = False
             train_dset, val_dset, test_dset, (channels, time_length, num_classes) = get_simulated_data_finetuning(dset, n_samples)
     else:
