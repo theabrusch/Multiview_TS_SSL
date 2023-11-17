@@ -4,9 +4,9 @@ import torch.nn.functional as F
 from src.models.models import wave2vecblock
 import numpy as np
 from sklearn.metrics import balanced_accuracy_score, precision_recall_fscore_support, roc_auc_score
-from sklearn.preprocessing import OneHotEncoder
 from src.models.losses import COCOAloss, CMCloss
 import wandb
+from copy import deepcopy
 
 class TimeClassifier(nn.Module):
     def __init__(self, in_features, num_classes, pool = 'adapt_avg', n_layers =1, orig_channels = 9, time_length = 33):
@@ -161,10 +161,7 @@ class Multiview(nn.Module):
         latents = self.wave2vec(x)
 
         if self.mpnn:
-            view_id, message_from, message_to = self.get_view_ids(b, ch, x.device)
-
-            latents = latents.permute(0,2,1)
-            out_mpnn = self.messagepassing(latents, message_from, message_to, view_id, ch, b)
+            out_mpnn = self.messagepassing(latents, ch, b)
             latents = out_mpnn.permute(0,2,1)
 
         out = self.projector(latents)
@@ -249,6 +246,7 @@ class MPNN(nn.Module):
     def __init__(self, input_dim, num_message_passing_rounds, feat_do):
         super().__init__()
         # message passing networks
+        self.per_channel = False
         self.message_nets = nn.ModuleList([
             nn.Sequential(
                 nn.Linear(input_dim*2, input_dim),
@@ -266,12 +264,45 @@ class MPNN(nn.Module):
             nn.Linear(input_dim, input_dim),
         )
     
-    def forward(self, latents, message_from, message_to, view_id, ch, batch_size):
+    def replicate_mpnn_per_channel(self, ch):
+        # replicate the message passing network for each channel
+        message_nets = []
+        for net in self.message_nets:
+            channel_nets = []
+            for _ in range(ch):
+                channel_nets.append(deepcopy(net))
+            message_nets.append(nn.ModuleList(channel_nets))
+        self.message_nets = nn.ModuleList(message_nets)
+        self.per_channel = True
+    
+    def get_view_ids(self, b, ch, device):
+        view_id = torch.arange(b).unsqueeze(1).repeat(1, ch).view(-1).to(device)
+        message_from = torch.arange(b*ch).unsqueeze(1).repeat(1, (ch-1)).view(-1).to(device)
+        message_to = torch.arange(b*ch).view(b, ch).unsqueeze(1).repeat(1, ch, 1)
+        idx = ~torch.eye(ch).view(1, ch, ch).repeat(b, 1, 1).bool()
+        message_to = message_to[idx].view(-1).to(device)
+
+        return view_id, message_from, message_to
+
+    def forward(self, latents, ch, batch_size):
+        #if self.per_channel:
+        #    latents = latents.reshape(batch_size, ch, *latents.shape[1:])
+        latents = latents.transpose(2,1)
+        view_id, message_from, message_to = self.get_view_ids(batch_size, ch, latents.device)
         for message_net in self.message_nets:
+            #if not self.per_channel:
             # divide by ch-1 to take mean
             message = message_net(torch.cat([latents[message_from], latents[message_to]], dim=-1))/(ch-1)
             # Sum messages
             latents.index_add_(0, message_to, message)
+            #else:
+            #    for channel in range(ch):
+            #        # divide by ch-1 to take mean
+            #        message = message_net[channel](torch.cat([latents[message_from], latents[message_to]], dim=-1))/(ch-1)
+            #        # Sum messages
+            #        latents.index_add_(0, message_to, message)
+
+
 
         # average across nodes 
         y = torch.zeros(batch_size, *latents.shape[1:]).to(latents.device)
@@ -512,6 +543,6 @@ def load_model(device, model_args, return_loss = True):
         elif model_args.loss == 'COCOA':
             loss_fn = COCOAloss(temperature = model_args.temperature).to(device)
     else:
-        loss_fn = None
+        return model
 
     return model, loss_fn
