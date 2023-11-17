@@ -65,7 +65,7 @@ def main(args):
         os.makedirs(ft_output_path, exist_ok=True)
 
         # load model
-        model, _ = load_model(device, model_args, return_loss=False)
+        model = load_model(device, model_args, return_loss=False)
         if args.load_model:
             pretrained_model_path = pretrained_model_path + '/pretrained_model.pt'
             model.load_state_dict(torch.load(pretrained_model_path, map_location=device))
