@@ -80,10 +80,11 @@ if __name__ == '__main__':
 
     # data arguments
     # path to config files. Remember to change paths in config files. 
-    parser.add_argument('--data_path', type = str, default = '/Users/theb/Desktop/data/ptbxl/') #sleepps18.yml /Users/theb/Desktop/data/HAR/ /Users/theb/Desktop/data/chapman/chapman_preprocessed/ simulated 
+    parser.add_argument('--data_path', type = str, default = 'simulated_cpc') #sleepps18.yml /Users/theb/Desktop/data/HAR/ /Users/theb/Desktop/data/chapman/chapman_preprocessed/ simulated 
     # whether or not to sample balanced during finetuning
     parser.add_argument('--balanced_sampling', type = str, default = False)
     # number of samples to finetune on. Can be list for multiple runs
+    parser.add_argument('--random_settings', type = eval, default = True)
 
     # model arguments
     parser.add_argument('--nlayers', type = int, default = 6)
