@@ -80,10 +80,10 @@ class multiview_data_simulator():
                 states  = np.random.randint(0, self.n_settings, (2, self.n_sources))
             else:
                 states = np.random.choice(np.arange(0, self.n_settings), 2, replace = False)
-            freqs_1 = np.take_along_axis(self.source_frequencies, np.expand_dims(states[0], 0), axis = 0)
-            freqs_2 = np.take_along_axis(self.source_frequencies, np.expand_dims(states[1], 0), axis = 0)
-            x[n,:t_len,:] = np.sin(np.expand_dims(freqs_1,1) * t + phase_shift[n]).T @ self.emission_matrix
-            x[n,t_len:,:] = np.sin(np.expand_dims(freqs_2,1) * t + phase_shift[n]).T @ self.emission_matrix
+            freqs_1 = np.take_along_axis(self.source_frequencies, np.expand_dims(states[0], 0), axis = 0).transpose()
+            freqs_2 = np.take_along_axis(self.source_frequencies, np.expand_dims(states[1], 0), axis = 0).transpose()
+            x[n,:t_len,:] = np.sin(freqs_1 * t + phase_shift[n]).T @ self.emission_matrix
+            x[n,t_len:,:] = np.sin(freqs_2 * t + phase_shift[n]).T @ self.emission_matrix
             if return_sources:
                 sources[n,:t_len,:]= np.sin(np.expand_dims(self.source_frequencies[states[0]],1) * t + phase_shift[n]).T
                 sources[n,t_len:,:]= np.sin(np.expand_dims(self.source_frequencies[states[1]],1) * t + phase_shift[n]).T
