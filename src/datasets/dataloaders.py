@@ -1,7 +1,7 @@
 from torch.utils.data import DataLoader
 from torch.utils.data.sampler import WeightedRandomSampler
 from src.datasets.eegdataset import construct_eeg_datasets
-from src.datasets.datasets import get_simulated_data_finetuning, get_simulated_data_pretraining, load_numpy_files
+from src.datasets.datasets import get_simulated_data_finetuning, get_simulated_data_pretraining, load_numpy_files, load_ninaprodb2
 import numpy as np
 
 def get_dataloaders_pretraining(args, subsample=False):
@@ -12,8 +12,12 @@ def get_dataloaders_pretraining(args, subsample=False):
         dset = args.data_path
         n_samples = [10000, 1000]
         train_dset, val_dset, (channels, time_length, num_classes) = get_simulated_data_pretraining(dset, args.pretraining_setup, n_samples, random_settings = args.random_settings)
+    elif 'ninaprodb2' in args.data_path:
+        dset = args.data_path.split('/')[-3]
+        train_dset, val_dset, (channels, time_length, num_classes) = load_ninaprodb2(args.data_path)
     else:
         dset = args.data_path.split('/')[-2]
+        # uniform method for loading ecg datasets
         train_dset, val_dset, _, (channels, time_length, num_classes) = load_numpy_files(args.data_path, combine_all = dset == 'chapman', subsample = subsample) 
     
     if args.pretraining_setup == 'cpc':

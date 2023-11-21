@@ -3,8 +3,8 @@ from torch.utils.data import TensorDataset
 from torch.nn import functional as F
 import numpy as np
 from src.datasets.simulated_data import cpc_data_simulator, multiview_data_simulator, finetuning_simulator
+from sklearn.model_selection import train_test_split
 import os
-
 
 def load_numpy_files(data_path, combine_all, subsample = False):
     train = torch.load(data_path + 'train.pt')
@@ -38,6 +38,30 @@ def load_numpy_files(data_path, combine_all, subsample = False):
         test_dset = SSL_dataset(test['samples'], test['labels'])
     return train_dset, val_dset, test_dset, (channels, time_length, num_classes)
 
+def load_ninaprodb2(data_path):
+    path = data_path 
+    files = os.listdir(path)
+    subjects = np.unique([file.split('_')[0] for file in files])
+    train, val = train_test_split(subjects, test_size=0.2, random_state=42)
+    train_data, train_labels = [], []
+    val_data, val_labels = [], []
+    for file in files:
+        subject = file.split('_')[0]
+        data = np.load(path + file)
+        if subject in train:
+            train_data.append(data['windows'])
+            train_labels.append(data['labels'])
+        elif subject in val:
+            val_data.append(data['windows'])
+            val_labels.append(data['labels'])
+    train_data, train_labels = torch.Tensor(np.concatenate(train_data)).transpose(1,2), torch.Tensor(np.concatenate(train_labels)).long()
+    val_data, val_labels = torch.Tensor(np.concatenate(val_data)).transpose(1,2), torch.Tensor(np.concatenate(val_labels)).long()
+    train_dset = SSL_dataset(train_data, train_labels)
+    val_dset = SSL_dataset(val_data, val_labels)
+    channels = train_data.shape[1]
+    time_length = train_data.shape[2]
+    num_classes = len(torch.unique(train_labels))
+    return train_dset, val_dset, (channels, time_length, num_classes)
 
 
 def get_simulated_data_pretraining(simulator_type, pretraining_setup, samples, random_settings = False, n_sources = [5,5], groups_of_dep_var = [8, 2], n_states = 1000, sigma = 0.5, fs = 100, length = 30):

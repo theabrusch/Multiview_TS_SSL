@@ -237,7 +237,7 @@ class AverageMPNN(nn.Module):
     def __init__(self):
         super().__init__()
 
-    def forward(self, latents, message_from, message_to, view_id, ch, batch_size):
+    def forward(self, latents, ch, batch_size):
         latents = latents.reshape(batch_size, ch, *latents.shape[1:])
         latents = latents.mean(1).squeeze(1)
         return latents
