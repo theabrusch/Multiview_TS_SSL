@@ -425,7 +425,9 @@ def finetune(model,
             device,
             test_loader = None, 
             early_stopping_criterion = None,
-            backup_path = None):
+            backup_path = None,
+            return_score = False,
+            log = True ):
     model.to(device)
     loss = nn.CrossEntropyLoss(weight=weights)
     if early_stopping_criterion is not None:
@@ -467,30 +469,31 @@ def finetune(model,
         collect_y = np.eye(collect_logits.shape[1])[collect_y]
         auc = roc_auc_score(collect_y, collect_logits)
 
-
         if test_loader is not None:
             test_acc, test_prec, test_rec, test_f, test_auc = evaluate_classifier(model, test_loader, device)
-            wandb.log({'train_class_loss': train_loss, 
-                        'val_class_loss': val_loss/(i+1), 
-                        'val_acc': acc, 
-                        'val_prec': np.mean(prec), 
-                        'val_rec': np.mean(rec), 
-                        'val_f': np.mean(f),
-                        'val_auc': auc,
-                        'test_acc': test_acc,
-                        'test_prec': np.mean(test_prec),
-                        'test_rec': np.mean(test_rec),
-                        'test_f': np.mean(test_f),
-                        'test_auc': test_auc
-                        })
+            if log:
+                wandb.log({'train_class_loss': train_loss, 
+                            'val_class_loss': val_loss/(i+1), 
+                            'val_acc': acc, 
+                            'val_prec': np.mean(prec), 
+                            'val_rec': np.mean(rec), 
+                            'val_f': np.mean(f),
+                            'val_auc': auc,
+                            'test_acc': test_acc,
+                            'test_prec': np.mean(test_prec),
+                            'test_rec': np.mean(test_rec),
+                            'test_f': np.mean(test_f),
+                            'test_auc': test_auc
+                            })
         else:
-            wandb.log({'train_class_loss': train_loss, 
-                        'val_class_loss': val_loss/(i+1), 
-                        'val_acc': acc, 
-                        'val_prec': np.mean(prec), 
-                        'val_rec': np.mean(rec), 
-                        'val_f': np.mean(f)
-                        })
+            if log:
+                wandb.log({'train_class_loss': train_loss, 
+                            'val_class_loss': val_loss/(i+1), 
+                            'val_acc': acc, 
+                            'val_prec': np.mean(prec), 
+                            'val_rec': np.mean(rec), 
+                            'val_f': np.mean(f)
+                            })
         if early_stopping_criterion is not None:
             if early_stopping_criterion == 'loss':
                 early_stopping(val_loss/(i+1), model)
@@ -505,6 +508,10 @@ def finetune(model,
     if early_stopping_criterion is not None:
         # load best model
         model.load_state_dict(torch.load(f'{backup_path}/finetuned_model.pt'))
+        acc = early_stopping.best_score
+
+    if return_score:
+        return acc
 
 def evaluate_classifier(model,
                         test_loader,
