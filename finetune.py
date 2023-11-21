@@ -33,7 +33,7 @@ def main(args):
     
 
     if args.load_model:
-        pretrained_model_path = f'pretrained_models/{args.pretraining_dset}_{args.model_setup}_{args.pretraining_setup}_{args.loss}'
+        pretrained_model_path = f'pretrained_models/{args.pretraining_dset}_{args.model_setup}_{args.pretraining_setup}_{args.loss}{args.model_postfix}'
         output_path = f'finetuned_models/{dset}_{args.model_setup}_{args.pretraining_setup}_{args.loss}'
         group = f'{dset}_{args.model_setup}_{args.pretraining_setup}_{args.loss}' #wandb group
 
@@ -115,6 +115,7 @@ if __name__ == '__main__':
     parser.add_argument('--pretraining_dset', type = str, default = 'HAR')
     parser.add_argument('--pretraining_setup', type = str, default = 'multiview', choices = ['multiview', 'cpc'])
     parser.add_argument('--model_setup', type = str, default = 'MPNN', choices = ['MPNN', 'nonMPNN', 'average'])
+    parser.add_argument('--model_postfix', type = str, default = '')
 
     parser.add_argument('--seed', type = int, default = 42)
 

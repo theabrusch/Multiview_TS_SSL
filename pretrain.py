@@ -30,7 +30,7 @@ def main(args):
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    output_path = f'pretrained_models/{dset}_{args.model_setup}_{args.pretraining_setup}_{args.loss}'
+    output_path = f'pretrained_models/{dset}_{args.model_setup}_{args.pretraining_setup}_{args.loss}{args.model_postfix}'
     print('Saving outputs in', output_path)
     output_path = check_output_path(output_path)
 
@@ -76,11 +76,12 @@ if __name__ == '__main__':
     parser.add_argument('--load_model', type = eval, default = False)
     parser.add_argument('--model_setup', type = str, default = 'average', choices = ['MPNN', 'nonMPNN', 'average'])
     parser.add_argument('--pretraining_setup', type = str, default = 'multiview', choices = ['multiview', 'cpc'])
+    parser.add_argument('--model_postfix', type = str, default = '')
     parser.add_argument('--seed', type = int, default = 42)
 
     # data arguments
     # path to config files. Remember to change paths in config files. 
-    parser.add_argument('--data_path', type = str, default = 'simulated_cpc') #sleepps18.yml /Users/theb/Desktop/data/HAR/ /Users/theb/Desktop/data/chapman/chapman_preprocessed/ simulated 
+    parser.add_argument('--data_path', type = str, default = 'simulated_multiview') #sleepps18.yml /Users/theb/Desktop/data/HAR/ /Users/theb/Desktop/data/chapman/chapman_preprocessed/ simulated 
     # whether or not to sample balanced during finetuning
     parser.add_argument('--balanced_sampling', type = str, default = False)
     # number of samples to finetune on. Can be list for multiple runs
