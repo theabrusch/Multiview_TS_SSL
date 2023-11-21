@@ -33,15 +33,10 @@ def main(args):
     
 
     if args.load_model:
-        pretrained_model_path = f'pretrained_models/{args.pretraining_dset}_{args.model_setup}_{args.pretraining_setup}_{args.loss}{args.model_postfix}'
+        pretrained_model_path = f'pretrained_models/{args.pretraining_dset}_{args.model_setup}_{args.pretraining_setup}_{args.loss}'
         output_path = f'finetuned_models/{dset}_{args.model_setup}_{args.pretraining_setup}_{args.loss}'
         group = f'{dset}_{args.model_setup}_{args.pretraining_setup}_{args.loss}' #wandb group
 
-        # load model args from pretrained model
-        model_arg_path = pretrained_model_path + '/args.pkl'
-        with open(model_arg_path, 'rb') as f:
-            model_args = pickle.load(f) 
-        print('Finetuning model with args', model_args)
     else:
         output_path = f'finetuned_models/{args.model_setup}_scratch'
         group = f'{dset}_{args.model_setup}_scratch' #wandb group
@@ -54,12 +49,19 @@ def main(args):
     output_path = check_output_path(output_path)
     args.outputh_path = output_path
     print('Saving outputs in', output_path)
+    # load model args from pretrained model
+    model_arg_path = pretrained_model_path + '/args.pkl'
+    with open(model_arg_path, 'rb') as f:
+        model_args = pickle.load(f) 
+    print('Finetuning model with args', model_args)
 
     for ft_loader, ft_val_loader in zip(finetune_loader, finetune_val_loader):
-        wandb.init(project = 'MultiView_new', group = group, config = args)
+        if args.log:
+            wandb.init(project = 'MultiView_new', group = group, config = args)
         train_samples = len(ft_loader.dataset)
         val_samples = len(ft_val_loader.dataset)
-        wandb.config.update({'Finetune samples': train_samples, 'Finetune validation samples': val_samples, 'Test samples': len(test_loader.dataset)})
+        if args.log:
+            wandb.config.update({'Finetune samples': train_samples, 'Finetune validation samples': val_samples, 'Test samples': len(test_loader.dataset)})
         # make sure to save outputs in a new folder
         ft_output_path = output_path + f'/{train_samples}_samples'
         os.makedirs(ft_output_path, exist_ok=True)
@@ -94,19 +96,22 @@ def main(args):
                 test_loader = test_loader if args.track_test_performance else None,
                 early_stopping_criterion=args.early_stopping_criterion,
                 backup_path=ft_output_path,
+                log = args.log
         )
 
         if not args.save_model:
             # delete ft_output_path folder to save memory
             shutil.rmtree(ft_output_path)
         accuracy, prec, rec, f, auc = evaluate_classifier(model, test_loader, device)
-        wandb.config.update({'Test accuracy': accuracy, 'Test precision': prec, 'Test recall': rec, 'Test f1': f, 'Test auc': auc})
-        wandb.finish()
+        if args.log:
+            wandb.config.update({'Test accuracy': accuracy, 'Test precision': prec, 'Test recall': rec, 'Test f1': f, 'Test auc': auc})
+            wandb.finish()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     # training arguments
     parser.add_argument('--job_id', type = str, default = '0')
+    parser.add_argument('--log', type = eval, default = True) # whether or not to log to wandb
     # whether or not to save finetuned models
     parser.add_argument('--save_model', type = eval, default = False)
     parser.add_argument('--load_model', type = eval, default = False)
