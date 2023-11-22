@@ -9,6 +9,11 @@ import os
 def load_numpy_files(data_path, combine_all, subsample = False):
     train = torch.load(data_path + 'train.pt')
     val = torch.load(data_path + 'val.pt')
+    if 'ptbxl' in data_path:
+        if train['samples'].shape[2] < train['samples'].shape[1]:
+            train['samples'] = train['samples'].transpose(2,1)
+        if val['samples'].shape[2] < val['samples'].shape[1]:
+            val['samples']= val['samples'].transpose(2,1)
     
     # check if path exists to test data
     if os.path.exists(data_path + 'test.pt'):
