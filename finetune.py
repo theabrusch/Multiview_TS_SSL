@@ -33,7 +33,7 @@ def main(args):
     
 
     if args.load_model:
-        pretrained_model_path = f'pretrained_models/{args.pretraining_dset}_{args.model_setup}_{args.pretraining_setup}_{args.loss}'
+        pretrained_path = f'pretrained_models/{args.pretraining_dset}_{args.model_setup}_{args.pretraining_setup}_{args.loss}'
         output_path = f'finetuned_models/{dset}_{args.model_setup}_{args.pretraining_setup}_{args.loss}'
         group = f'{dset}_{args.model_setup}_{args.pretraining_setup}_{args.loss}' #wandb group
 
@@ -50,10 +50,11 @@ def main(args):
     args.outputh_path = output_path
     print('Saving outputs in', output_path)
     # load model args from pretrained model
-    model_arg_path = pretrained_model_path + '/args.pkl'
+    model_arg_path = pretrained_path + '/args.pkl'
     with open(model_arg_path, 'rb') as f:
         model_args = pickle.load(f) 
     print('Finetuning model with args', model_args)
+    pretrained_model_path = pretrained_path + '/pretrained_model.pt'
 
     for ft_loader, ft_val_loader in zip(finetune_loader, finetune_val_loader):
         if args.log:
@@ -69,7 +70,6 @@ def main(args):
         # load model
         model = load_model(device, model_args, return_loss=False)
         if args.load_model:
-            pretrained_model_path = pretrained_model_path + '/pretrained_model.pt'
             model.load_state_dict(torch.load(pretrained_model_path, map_location=device))
         
         # update model parameters for finetuning
