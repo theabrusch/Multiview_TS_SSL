@@ -138,7 +138,9 @@ class SSL_dataset(TensorDataset):
         y = self.y[index]
         # normalize each epoch channelwise
         if self.standardize_channels:
-            x = (x - x.mean(axis=1, keepdims=True)) / x.std(axis=1, keepdims=True)
+            stds = x.std(axis=1, keepdims=True)
+            stds[stds == 0.] = 1.
+            x = (x - x.mean(axis=1, keepdims=True)) / stds
         
         return x, y
 
