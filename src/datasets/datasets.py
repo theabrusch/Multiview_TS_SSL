@@ -73,7 +73,7 @@ def get_simulated_data_pretraining(simulator_type, pretraining_setup, samples, r
     if simulator_type == 'simulated_cpc':
         groups_of_dep_var = 5*[2]
         n_sources = len(groups_of_dep_var)*[3]
-        simulator = cpc_data_simulator(n_sources, groups_of_dep_var, n_states, sigma, fs, length)
+        simulator = cpc_data_simulator(n_sources, groups_of_dep_var, n_states, sigma, fs, length*2)
     elif simulator_type == 'simulated_multiview':
         if isinstance(n_sources, list):
             n_sources = np.sum(n_sources)
