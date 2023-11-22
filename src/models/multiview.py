@@ -161,7 +161,8 @@ class Multiview(nn.Module):
         latents = self.wave2vec(x)
 
         if self.mpnn:
-            out_mpnn = self.messagepassing(latents, ch, b)
+            view_id, message_from, message_to = self.get_view_ids(b, ch, latents.device)
+            out_mpnn = self.messagepassing(view_id, message_from, message_to, latents, ch, b)
             latents = out_mpnn.permute(0,2,1)
 
         out = self.projector(latents)
@@ -237,7 +238,7 @@ class AverageMPNN(nn.Module):
     def __init__(self):
         super().__init__()
 
-    def forward(self, latents, ch, batch_size):
+    def forward(self, view_id, message_from, message_to, latents, ch, batch_size):
         latents = latents.reshape(batch_size, ch, *latents.shape[1:])
         latents = latents.mean(1).squeeze(1)
         return latents
@@ -284,11 +285,10 @@ class MPNN(nn.Module):
 
         return view_id, message_from, message_to
 
-    def forward(self, latents, ch, batch_size):
+    def forward(self, view_id, message_from, message_to, latents, ch, batch_size):
         #if self.per_channel:
         #    latents = latents.reshape(batch_size, ch, *latents.shape[1:])
         latents = latents.transpose(2,1)
-        view_id, message_from, message_to = self.get_view_ids(batch_size, ch, latents.device)
         for message_net in self.message_nets:
             #if not self.per_channel:
             # divide by ch-1 to take mean
