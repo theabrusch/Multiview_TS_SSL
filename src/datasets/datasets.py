@@ -102,6 +102,8 @@ def get_simulated_data_finetuning(finetune_setup, samples, n_sources = [5,5], gr
             n_sources = [n_sources[0], n_sources[0]]
         if len(groups_of_dep_var) == 1:
             groups_of_dep_var = [groups_of_dep_var[0], groups_of_dep_var[0]]
+        groups_of_dep_var = 5*[2]
+        n_sources = len(groups_of_dep_var)*[3]
     elif finetune_setup == 'simulated_multiview':
         if len(n_sources) > 1:
             n_sources = [np.sum(n_sources)]
