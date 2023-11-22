@@ -9,35 +9,48 @@ class cpc_data_simulator():
         self.length = length
         self.n_settings = n_states
         self.source_frequencies = np.zeros((n_states, np.sum(n_sources)))
-        self.emission_matrix = np.zeros((np.sum(groups_of_dep_var), np.sum(n_sources)))
+        self.emission_matrix = np.zeros((np.sum(self.n_sources), np.sum(self.groups_of_dep_var)))
         k = 0
         j = 0
-        for source, group in zip(n_sources, groups_of_dep_var):
-            self.emission_matrix[j:j+group, k:k+source] = np.random.normal(0, 1, (group, source))
-            self.source_frequencies[:, k:k+source] = np.random.uniform(1, 50, (n_states, source))
+        for source, group in zip(self.n_sources, self.groups_of_dep_var):
+            self.emission_matrix[k:k+source, j:j+group] = np.random.normal(0, 1, (source, group))
             j+=group
             k+=source
     
-    def generate(self, n_samples, random_settings = False, return_sources = False, shuffle_variables = True):
+    def generate(self, n_samples, random_emission_matrix = False, random_settings = False, return_sources = False, shuffle_variables = True):
         # Generate the independent variables
-        t = np.repeat(np.expand_dims(np.arange(0, self.length, 1/self.fs), axis = 0), n_samples, axis = 0)
+        t = np.expand_dims(np.arange(0, self.length, 1/self.fs),0)
         # Generate a random phase shift per sample
         phase_shift = np.expand_dims(np.random.uniform(0, 2*np.pi, n_samples), 1)
         # Generate the dependent variables
         x = np.zeros((n_samples, round(self.length*self.fs) , np.sum(self.groups_of_dep_var)))
-        if random_settings:
-            states = np.random.randint(0, self.n_settings, size = (np.sum(self.n_sources), n_samples))
-        else:
-            states = np.random.randint(0, self.n_settings, n_samples)
-            states = np.repeat(np.expand_dims(states, 0), self.n_sources, axis = 0)
 
         if return_sources:
             sources = np.zeros((n_samples, round(self.length*self.fs), np.sum(self.n_sources)))
 
-        for k in range(np.sum(self.n_sources)):
-            x += np.expand_dims(np.sin(np.expand_dims(self.source_frequencies[states[k], k],1) * t + phase_shift), 2) @ np.expand_dims(self.emission_matrix[:, k], 0)
+        for n in range(n_samples):
+            if random_settings:
+                states  = np.random.randint(0, self.n_settings, (self.n_sources))
+                freqs = np.take_along_axis(self.source_frequencies, np.expand_dims(states, 0), axis = 0).transpose()
+            else:
+                states = np.random.choice(np.arange(0, self.n_settings))
+                freqs = np.expand_dims(self.source_frequencies[states], 1)
+                
+            if random_emission_matrix:
+                em_matrix = np.zeros((np.sum(self.n_sources), np.sum(self.groups_of_dep_var)))
+                k = 0
+                j = 0
+                for source, group in zip(self.n_sources, self.groups_of_dep_var):
+                    em_matrix[k:k+source, j:j+group] = np.random.normal(0, 1, (source, group))
+                    j+=group
+                    k+=source
+            else:
+                em_matrix = self.emission_matrix
+
+            x[n,:,:] = np.sin(freqs * t + phase_shift[n]).T @ em_matrix
+
             if return_sources:
-                sources[:, :, k] = np.sin(np.expand_dims(self.source_frequencies[states[k], k],1) * t + phase_shift)
+                sources[n,:,:]= np.sin(freqs * t + phase_shift[n]).T
 
         # Add noise
         x += np.random.normal(0, self.sigma, (n_samples, round(self.length*self.fs), np.sum(self.groups_of_dep_var)))
@@ -63,7 +76,7 @@ class multiview_data_simulator():
         self.source_frequencies = np.random.uniform(1, 50, (n_states, n_sources))
         self.emission_matrix = np.random.normal(0, 1, (n_sources, n_variables))
     
-    def generate(self, n_samples, random_settings = False, return_sources = False):
+    def generate(self, n_samples, random_emission_matrix = False, random_settings = False, return_sources = False):
         # Generate the independent variables
         t = np.expand_dims(np.arange(0, self.length/2, 1/self.fs),0)
         t_len = t.shape[1]
@@ -82,8 +95,14 @@ class multiview_data_simulator():
                 states = np.random.choice(np.arange(0, self.n_settings), 2, replace = False)
             freqs_1 = np.take_along_axis(self.source_frequencies, np.expand_dims(states[0], 0), axis = 0).transpose()
             freqs_2 = np.take_along_axis(self.source_frequencies, np.expand_dims(states[1], 0), axis = 0).transpose()
-            x[n,:t_len,:] = np.sin(freqs_1 * t + phase_shift[n]).T @ self.emission_matrix
-            x[n,t_len:,:] = np.sin(freqs_2 * t + phase_shift[n]).T @ self.emission_matrix
+
+            if random_emission_matrix:
+                em_matrix = np.random.normal(0, 1, (self.n_sources, self.n_variables))
+            else:
+                em_matrix = self.emission_matrix
+                
+            x[n,:t_len,:] = np.sin(freqs_1 * t + phase_shift[n]).T @ em_matrix
+            x[n,t_len:,:] = np.sin(freqs_2 * t + phase_shift[n]).T @ em_matrix
             if return_sources:
                 sources[n,:t_len,:]= np.sin(np.expand_dims(self.source_frequencies[states[0]],1) * t + phase_shift[n]).T
                 sources[n,t_len:,:]= np.sin(np.expand_dims(self.source_frequencies[states[1]],1) * t + phase_shift[n]).T

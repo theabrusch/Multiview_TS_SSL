@@ -69,11 +69,11 @@ def load_ninaprodb2(data_path):
     return train_dset, val_dset, (channels, time_length, num_classes)
 
 
-def get_simulated_data_pretraining(simulator_type, pretraining_setup, samples, random_settings = False, n_sources = [5,5], groups_of_dep_var = [8, 2], n_states = 1000, sigma = 0.5, fs = 100, length = 30):
+def get_simulated_data_pretraining(simulator_type, pretraining_setup, samples, random_emission_matrix = False, random_settings = False, n_sources = [5,5], groups_of_dep_var = [8, 2], n_states = 1000, sigma = 0.5, fs = 100, length = 30):
     if simulator_type == 'simulated_cpc':
         groups_of_dep_var = 5*[2]
         n_sources = len(groups_of_dep_var)*[3]
-        simulator = cpc_data_simulator(n_sources, groups_of_dep_var, n_states, sigma, fs, length*2)
+        simulator = cpc_data_simulator(n_sources, groups_of_dep_var, n_states, sigma, fs, length)
     elif simulator_type == 'simulated_multiview':
         if isinstance(n_sources, list):
             n_sources = np.sum(n_sources)
@@ -81,8 +81,8 @@ def get_simulated_data_pretraining(simulator_type, pretraining_setup, samples, r
             groups_of_dep_var = np.sum(groups_of_dep_var)
         simulator = multiview_data_simulator(n_sources, groups_of_dep_var, n_states, sigma, fs, 2*length)
         
-    train = torch.Tensor(simulator.generate(samples[0], random_settings=random_settings)).transpose(1,2)
-    val = torch.Tensor(simulator.generate(samples[1], random_settings=random_settings)).transpose(1,2)
+    train = torch.Tensor(simulator.generate(samples[0], random_emission_matrix=random_emission_matrix, random_settings=random_settings)).transpose(1,2)
+    val = torch.Tensor(simulator.generate(samples[1], random_emission_matrix=random_emission_matrix, random_settings=random_settings)).transpose(1,2)
     if pretraining_setup == 'multiview':
         train = train[:, :, :train.shape[2]//2]
         val = val[:, :, :val.shape[2]//2]

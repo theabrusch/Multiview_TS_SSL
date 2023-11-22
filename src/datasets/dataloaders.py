@@ -11,7 +11,7 @@ def get_dataloaders_pretraining(args, subsample=False):
     elif 'simulated' in args.data_path:
         dset = args.data_path
         n_samples = [10000, 1000]
-        train_dset, val_dset, (channels, time_length, num_classes) = get_simulated_data_pretraining(dset, args.pretraining_setup, n_samples, random_settings = args.random_settings)
+        train_dset, val_dset, (channels, time_length, num_classes) = get_simulated_data_pretraining(dset, args.pretraining_setup, n_samples, random_emission_matrix=args.random_emission_matrix, random_settings = args.random_settings)
     elif 'ninaprodb2' in args.data_path:
         dset = args.data_path.split('/')[-2]
         train_dset, val_dset, (channels, time_length, num_classes) = load_ninaprodb2(args.data_path)
