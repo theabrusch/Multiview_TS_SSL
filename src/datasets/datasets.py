@@ -6,7 +6,7 @@ from src.datasets.simulated_data import cpc_data_simulator, multiview_data_simul
 from sklearn.model_selection import train_test_split
 import os
 
-def load_numpy_files(data_path, combine_all, subsample = False):
+def load_numpy_files(data_path, combine_all = False, subsample = False):
     train = torch.load(data_path + 'train.pt')
     val = torch.load(data_path + 'val.pt')
     if 'ptbxl' in data_path:
