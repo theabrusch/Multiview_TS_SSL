@@ -8,12 +8,13 @@ class cpc_data_simulator():
         self.fs = fs
         self.length = length
         self.n_settings = n_states
-        self.source_frequencies = np.zeros((n_states, np.sum(n_sources)))
+        self.source_frequencies = np.random.uniform(1, 50, (n_states, np.sum(n_sources)))
         self.emission_matrix = np.zeros((np.sum(self.n_sources), np.sum(self.groups_of_dep_var)))
         k = 0
         j = 0
         for source, group in zip(self.n_sources, self.groups_of_dep_var):
             self.emission_matrix[k:k+source, j:j+group] = np.random.normal(0, 1, (source, group))
+
             j+=group
             k+=source
     
@@ -30,7 +31,7 @@ class cpc_data_simulator():
 
         for n in range(n_samples):
             if random_settings:
-                states  = np.random.randint(0, self.n_settings, (self.n_sources))
+                states  = np.random.randint(0, self.n_settings, (np.sum(self.n_sources)))
                 freqs = np.take_along_axis(self.source_frequencies, np.expand_dims(states, 0), axis = 0).transpose()
             else:
                 states = np.random.choice(np.arange(0, self.n_settings))
