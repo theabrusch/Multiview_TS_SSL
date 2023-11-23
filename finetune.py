@@ -36,7 +36,12 @@ def main(args):
         pretrained_path = f'pretrained_models/{args.pretraining_dset}_{args.model_setup}_{args.pretraining_setup}_{args.loss}'
         output_path = f'finetuned_models/{dset}_{args.model_setup}_{args.pretraining_setup}_{args.loss}'
         group = f'{dset}_{args.model_setup}_{args.pretraining_setup}_{args.loss}' #wandb group
-
+        # load model args from pretrained model
+        model_arg_path = pretrained_path + '/args.pkl'
+        with open(model_arg_path, 'rb') as f:
+            model_args = pickle.load(f) 
+        print('Finetuning model with args', model_args)
+        pretrained_model_path = pretrained_path + '/pretrained_model.pt'
     else:
         output_path = f'finetuned_models/{args.model_setup}_scratch'
         group = f'{dset}_{args.model_setup}_scratch' #wandb group
@@ -49,12 +54,7 @@ def main(args):
     output_path = check_output_path(output_path)
     args.outputh_path = output_path
     print('Saving outputs in', output_path)
-    # load model args from pretrained model
-    model_arg_path = pretrained_path + '/args.pkl'
-    with open(model_arg_path, 'rb') as f:
-        model_args = pickle.load(f) 
-    print('Finetuning model with args', model_args)
-    pretrained_model_path = pretrained_path + '/pretrained_model.pt'
+    
 
     for ft_loader, ft_val_loader in zip(finetune_loader, finetune_val_loader):
         if args.log:
