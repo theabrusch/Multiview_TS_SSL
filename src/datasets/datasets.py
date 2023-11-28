@@ -67,7 +67,18 @@ def load_ninaprodb2(data_path, standardize_channels = True):
     return train_dset, val_dset, (channels, time_length, num_classes)
 
 
-def get_simulated_data_pretraining(simulator_type, pretraining_setup, samples, standardize_channels = False, random_emission_matrix = False, n_sources = [5,5], groups_of_dep_var = [8, 2], sigma = 0.5, fs = 100, length = 30):
+def get_simulated_data_pretraining(simulator_type, 
+                                   pretraining_setup, 
+                                   samples, 
+                                   standardize_channels = False, 
+                                   normalize_emisison = True,
+                                   random_emission_matrix = False, 
+                                   n_sources = [5,5], 
+                                   groups_of_dep_var = [8, 2], 
+                                   sigma = 0.5, 
+                                   fs = 100, 
+                                   length = 30,
+                                   seed = 42):
     if simulator_type == 'simulated_cpc':
         groups_of_dep_var = 5*[2]
         n_sources = len(groups_of_dep_var)*[3]
@@ -77,7 +88,7 @@ def get_simulated_data_pretraining(simulator_type, pretraining_setup, samples, s
         if isinstance(groups_of_dep_var, list):
             groups_of_dep_var = [np.sum(groups_of_dep_var)]
 
-    simulator = pretraining_data_simulator(n_sources, groups_of_dep_var, sigma, fs, 2*length, simulator_type=simulator_type)
+    simulator = pretraining_data_simulator(n_sources, groups_of_dep_var, sigma, fs, 2*length, normalize_emission=normalize_emisison, simulator_type=simulator_type, seed=seed)
         
     train = torch.Tensor(simulator.generate(samples[0], random_emission_matrix=random_emission_matrix)).transpose(1,2)
     val = torch.Tensor(simulator.generate(samples[1], random_emission_matrix=random_emission_matrix)).transpose(1,2)
@@ -95,7 +106,17 @@ def get_simulated_data_pretraining(simulator_type, pretraining_setup, samples, s
 
     return train_dset, val_dset, (channels, time_length, num_classes)
 
-def get_simulated_data_finetuning(finetune_setup, samples, standardize_channels = False, n_sources = [6,6], groups_of_dep_var = [8, 2], n_states = 2, sigma = 0.5, fs = 100, length = 30):
+def get_simulated_data_finetuning(finetune_setup, 
+                                  samples, 
+                                  normalize_emission = True,
+                                  standardize_channels = False, 
+                                  n_sources = [6,6], 
+                                  groups_of_dep_var = [8, 2], 
+                                  n_states = 2, 
+                                  sigma = 0.5, 
+                                  fs = 100, 
+                                  length = 30,
+                                  seed = 42):
     if finetune_setup == 'simulated_cpc':
         if len(n_sources) == 1:
             n_sources = [n_sources[0], n_sources[0]]
@@ -108,7 +129,7 @@ def get_simulated_data_finetuning(finetune_setup, samples, standardize_channels 
             n_sources = [np.sum(n_sources)]
         if len(groups_of_dep_var) > 1:
             groups_of_dep_var = [np.sum(groups_of_dep_var)]
-    simulator = finetuning_simulator(finetune_setup, n_sources, groups_of_dep_var, n_states, sigma, fs, length)
+    simulator = finetuning_simulator(finetune_setup, n_sources, groups_of_dep_var, n_states, sigma, fs, length, normalize_emission=normalize_emission, seed = seed)
 
     train = simulator.generate(samples[0])
     val = simulator.generate(samples[1])
