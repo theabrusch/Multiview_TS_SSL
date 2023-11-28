@@ -18,7 +18,7 @@ class pretraining_data_simulator():
 
     def generate_emission_matrix(self, seed = None):
         np.random.seed(seed)
-        em_matrix = np.random.normal(0, 1, (np.sum(self.n_sources), np.sum(self.groups_of_dep_var)))
+        em_matrix = np.random.uniform(0, 1, (np.sum(self.n_sources), np.sum(self.groups_of_dep_var)))
         k = 0
         j = 0
         emission_matrix = np.zeros((np.sum(self.n_sources), np.sum(self.groups_of_dep_var)))
@@ -27,8 +27,7 @@ class pretraining_data_simulator():
             j+=group
             k+=source
         if self.normalize_emission:
-            exp_emission_matrix = np.exp(emission_matrix)
-            emission_matrix = exp_emission_matrix / np.sum(exp_emission_matrix, axis = 0, keepdims = True)
+            emission_matrix = emission_matrix / np.sum(emission_matrix, axis = 1, keepdims = True)
         np.random.seed(None)
         return emission_matrix
     
@@ -164,7 +163,7 @@ class finetuning_simulator():
 
     def generate_emission_matrix(self, seed = None):
         np.random.seed(seed)
-        em_matrix = np.random.normal(0, 1, (np.sum(self.n_sources), np.sum(self.groups_of_dep_var)))
+        em_matrix = np.random.uniform(0, 1, (np.sum(self.n_sources), np.sum(self.groups_of_dep_var)))
         k = 0
         j = 0
         emission_matrix = np.zeros((np.sum(self.n_sources), np.sum(self.groups_of_dep_var)))
@@ -173,8 +172,7 @@ class finetuning_simulator():
             j+=group
             k+=source
         if self.normalize_emission:
-            exp_emission_matrix = np.exp(emission_matrix)
-            emission_matrix = exp_emission_matrix / np.sum(exp_emission_matrix, axis = 0, keepdims = True)
+            emission_matrix = emission_matrix / np.sum(emission_matrix, axis = 1, keepdims = True)
         np.random.seed(None)
         return emission_matrix
     
