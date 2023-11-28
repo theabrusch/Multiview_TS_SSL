@@ -21,7 +21,6 @@ def check_output_path(output_path):
 def main(args):
     args.train_mode = 'pretrain'
     # always normalize epochs channelwise within each window
-    args.standardize_epochs = 'channelwise'
     
     # load data 
     pretrain_loader, pretrain_val_loader, dset, (channels, time_length, num_classes) = get_dataloaders_pretraining(args, subsample = False)
@@ -85,8 +84,9 @@ if __name__ == '__main__':
     # whether or not to sample balanced during finetuning
     parser.add_argument('--balanced_sampling', type = str, default = False)
     # number of samples to finetune on. Can be list for multiple runs
-    parser.add_argument('--random_settings', type = eval, default = False)
+    parser.add_argument('--random_settings', type = eval, default = True)
     parser.add_argument('--random_emission_matrix', type = eval, default = True)
+    parser.add_argument('--standardize_channels', type = eval, default = True)
 
     # model arguments
     parser.add_argument('--nlayers', type = int, default = 6)

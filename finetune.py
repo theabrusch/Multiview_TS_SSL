@@ -131,6 +131,7 @@ if __name__ == '__main__':
     parser.add_argument('--balanced_sampling', type = eval, default = True)
     # number of samples to finetune on. Can be list for multiple runs
     parser.add_argument('--sample_generator', type = eval, nargs = '+', default = [10, 20, None])
+    parser.add_argument('--standardize_channels', type = eval, default = True)
 
     # model arguments
     parser.add_argument('--remove_mpnn', type = eval, default = False)
