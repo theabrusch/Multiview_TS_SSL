@@ -2,11 +2,11 @@ import torch
 from torch.utils.data import TensorDataset
 from torch.nn import functional as F
 import numpy as np
-from src.datasets.simulated_data import cpc_data_simulator, multiview_data_simulator, finetuning_simulator
+from src.datasets.simulated_data import pretraining_data_simulator, finetuning_simulator
 from sklearn.model_selection import train_test_split
 import os
 
-def load_numpy_files(data_path, combine_all = False, subsample = False):
+def load_numpy_files(data_path, standardize_channels = True, combine_all = False, subsample = False):
     train = torch.load(data_path + 'train.pt')
     val = torch.load(data_path + 'val.pt')
     if 'ptbxl' in data_path:
@@ -33,17 +33,15 @@ def load_numpy_files(data_path, combine_all = False, subsample = False):
     
     if combine_all:
         train = {'samples': torch.cat((train['samples'], val['samples'])), 'labels': torch.cat((train['labels'], val['labels']))}
-        train_dset = SSL_dataset(train['samples'], train['labels'])
-        val_dset = SSL_dataset(val['samples'], val['labels'])
-    else:
-        train_dset = SSL_dataset(train['samples'], train['labels'])
-        val_dset = SSL_dataset(val['samples'], val['labels'])
+    
+    train_dset = SSL_dataset(train['samples'], train['labels'], standardize_channels=standardize_channels)
+    val_dset = SSL_dataset(val['samples'], val['labels'], standardize_channels=standardize_channels)
     
     if test is not None:
-        test_dset = SSL_dataset(test['samples'], test['labels'])
+        test_dset = SSL_dataset(test['samples'], test['labels'], standardize_channels=standardize_channels)
     return train_dset, val_dset, test_dset, (channels, time_length, num_classes)
 
-def load_ninaprodb2(data_path):
+def load_ninaprodb2(data_path, standardize_channels = True):
     path = data_path 
     files = os.listdir(path)
     subjects = np.unique([file.split('_')[0] for file in files])
@@ -61,34 +59,35 @@ def load_ninaprodb2(data_path):
             val_labels.append(data['labels'])
     train_data, train_labels = torch.Tensor(np.concatenate(train_data)).transpose(1,2), torch.Tensor(np.concatenate(train_labels)).long()
     val_data, val_labels = torch.Tensor(np.concatenate(val_data)).transpose(1,2), torch.Tensor(np.concatenate(val_labels)).long()
-    train_dset = SSL_dataset(train_data, train_labels)
-    val_dset = SSL_dataset(val_data, val_labels)
+    train_dset = SSL_dataset(train_data, train_labels, standardize_channels=standardize_channels)
+    val_dset = SSL_dataset(val_data, val_labels, standardize_channels=standardize_channels)
     channels = train_data.shape[1]
     time_length = train_data.shape[2]
     num_classes = len(torch.unique(train_labels))
     return train_dset, val_dset, (channels, time_length, num_classes)
 
 
-def get_simulated_data_pretraining(simulator_type, pretraining_setup, samples, random_emission_matrix = False, random_settings = False, n_sources = [5,5], groups_of_dep_var = [8, 2], n_states = 1000, sigma = 0.5, fs = 100, length = 30):
+def get_simulated_data_pretraining(simulator_type, pretraining_setup, samples, standardize_channels = False, random_emission_matrix = False, n_sources = [5,5], groups_of_dep_var = [8, 2], sigma = 0.5, fs = 100, length = 30):
     if simulator_type == 'simulated_cpc':
         groups_of_dep_var = 5*[2]
         n_sources = len(groups_of_dep_var)*[3]
-        simulator = cpc_data_simulator(n_sources, groups_of_dep_var, n_states, sigma, fs, length*2)
     elif simulator_type == 'simulated_multiview':
         if isinstance(n_sources, list):
-            n_sources = np.sum(n_sources)
+            n_sources = [np.sum(n_sources)]
         if isinstance(groups_of_dep_var, list):
-            groups_of_dep_var = np.sum(groups_of_dep_var)
-        simulator = multiview_data_simulator(n_sources, groups_of_dep_var, n_states, sigma, fs, 2*length)
+            groups_of_dep_var = [np.sum(groups_of_dep_var)]
+
+    simulator = pretraining_data_simulator(n_sources, groups_of_dep_var, sigma, fs, 2*length, simulator_type=simulator_type)
         
-    train = torch.Tensor(simulator.generate(samples[0], random_emission_matrix=random_emission_matrix, random_settings=random_settings)).transpose(1,2)
-    val = torch.Tensor(simulator.generate(samples[1], random_emission_matrix=random_emission_matrix, random_settings=random_settings)).transpose(1,2)
+    train = torch.Tensor(simulator.generate(samples[0], random_emission_matrix=random_emission_matrix)).transpose(1,2)
+    val = torch.Tensor(simulator.generate(samples[1], random_emission_matrix=random_emission_matrix)).transpose(1,2)
+    
     if pretraining_setup == 'multiview':
         train = train[:, :, :train.shape[2]//2]
         val = val[:, :, :val.shape[2]//2]
 
-    train_dset = SSL_dataset(train, torch.zeros(samples[0]))
-    val_dset = SSL_dataset(val, torch.zeros(samples[1]))
+    train_dset = SSL_dataset(train, torch.zeros(samples[0]), standardize_channels=standardize_channels)
+    val_dset = SSL_dataset(val, torch.zeros(samples[1]), standardize_channels=standardize_channels)
 
     channels = train.shape[1]
     time_length = train.shape[2]//2
@@ -96,7 +95,7 @@ def get_simulated_data_pretraining(simulator_type, pretraining_setup, samples, r
 
     return train_dset, val_dset, (channels, time_length, num_classes)
 
-def get_simulated_data_finetuning(finetune_setup, samples, n_sources = [5,5], groups_of_dep_var = [8, 2], n_states = 2, sigma = 0.5, fs = 100, length = 30):
+def get_simulated_data_finetuning(finetune_setup, samples, standardize_channels = False, n_sources = [6,6], groups_of_dep_var = [8, 2], n_states = 2, sigma = 0.5, fs = 100, length = 30):
     if finetune_setup == 'simulated_cpc':
         if len(n_sources) == 1:
             n_sources = [n_sources[0], n_sources[0]]
@@ -119,9 +118,9 @@ def get_simulated_data_finetuning(finetune_setup, samples, n_sources = [5,5], gr
     X_val, y_val = torch.Tensor(val[0]).transpose(1,2), torch.Tensor(val[1]).long()
     X_test, y_test = torch.Tensor(test[0]).transpose(1,2), torch.Tensor(test[1]).long()
 
-    train_dset = SSL_dataset(X_train, y_train)
-    val_dset = SSL_dataset(X_val, y_val)
-    test_dset = SSL_dataset(X_test, y_test)
+    train_dset = SSL_dataset(X_train, y_train, standardize_channels=standardize_channels)
+    val_dset = SSL_dataset(X_val, y_val, standardize_channels=standardize_channels)
+    test_dset = SSL_dataset(X_test, y_test, standardize_channels=standardize_channels)
 
     channels = X_train.shape[1]
     time_length = X_train.shape[2]

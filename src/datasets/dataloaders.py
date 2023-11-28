@@ -7,18 +7,19 @@ import numpy as np
 def get_dataloaders_pretraining(args, subsample=False):
     if 'sleep' in args.data_path:
         dset = args.data_path.split('.')[0]
+        args.standardize_epochs = 'channelwise'
         train_dset, val_dset, (channels, time_length, num_classes) = construct_eeg_datasets(**vars(args))
     elif 'simulated' in args.data_path:
         dset = args.data_path
         n_samples = [10000, 1000]
-        train_dset, val_dset, (channels, time_length, num_classes) = get_simulated_data_pretraining(dset, args.pretraining_setup, n_samples, random_emission_matrix=args.random_emission_matrix, random_settings = args.random_settings)
+        train_dset, val_dset, (channels, time_length, num_classes) = get_simulated_data_pretraining(dset, args.pretraining_setup, n_samples, standardize_channels=args.standarize_channels, random_emission_matrix=args.random_emission_matrix)
     elif 'ninaprodb2' in args.data_path:
         dset = args.data_path.split('/')[-2]
-        train_dset, val_dset, (channels, time_length, num_classes) = load_ninaprodb2(args.data_path)
+        train_dset, val_dset, (channels, time_length, num_classes) = load_ninaprodb2(args.data_path, standardize_channels=args.standarize_channels)
     else:
         dset = args.data_path.split('/')[-2]
         # uniform method for loading ecg datasets
-        train_dset, val_dset, _, (channels, time_length, num_classes) = load_numpy_files(args.data_path, combine_all = dset == 'chapman', subsample = subsample) 
+        train_dset, val_dset, _, (channels, time_length, num_classes) = load_numpy_files(args.data_path, combine_all = dset == 'chapman', standardize_channels= args.standardize_channels, subsample = subsample) 
     
     if args.pretraining_setup == 'cpc':
         time_length = time_length // 2
@@ -30,15 +31,16 @@ def get_dataloaders_pretraining(args, subsample=False):
 def get_dataloaders_finetuning(args, balanced_sampling, sample_generator = None, seed = 42):
     if 'sleep' in args.data_path:
         dset = args.data_path.split('.')[0]
+        args.standardize_epochs = 'channelwise'
         train_dset, val_dset, test_dset, (channels, time_length, num_classes) = construct_eeg_datasets(**vars(args))
     elif 'simulated' in args.data_path:
         dset = args.data_path
         n_samples = [10000, 1000, 1000]
         balanced_sampling = False
-        train_dset, val_dset, test_dset, (channels, time_length, num_classes) = get_simulated_data_finetuning(dset, n_samples)
+        train_dset, val_dset, test_dset, (channels, time_length, num_classes) = get_simulated_data_finetuning(dset, n_samples, standardize_channels=args.standarize_channels)
     else:
         dset = args.data_path.split('/')[-2]
-        train_dset, val_dset, test_dset, (channels, time_length, num_classes) = load_numpy_files(args.data_path)
+        train_dset, val_dset, test_dset, (channels, time_length, num_classes) = load_numpy_files(args.data_path, standardize_channels= args.standardize_channels)
         
     if balanced_sampling:
         sample_weights_train, length_train, sample_weights_val, length_val = get_label_balance(train_dset, val_dset, sample_generator = sample_generator, seed = seed)
