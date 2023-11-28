@@ -241,6 +241,7 @@ class AverageMPNN(nn.Module):
     def forward(self, view_id, message_from, message_to, latents, ch, batch_size):
         latents = latents.reshape(batch_size, ch, *latents.shape[1:])
         latents = latents.mean(1).squeeze(1)
+        latents = latents.transpose(2,1)
         return latents
 
 class MPNN(nn.Module):
@@ -289,12 +290,14 @@ class MPNN(nn.Module):
         #if self.per_channel:
         #    latents = latents.reshape(batch_size, ch, *latents.shape[1:])
         latents = latents.transpose(2,1)
+        put_idx = message_to.unsqueeze(-1).repeat(1,*latents.shape[1:])
         for message_net in self.message_nets:
             #if not self.per_channel:
             # divide by ch-1 to take mean
             message = message_net(torch.cat([latents[message_from], latents[message_to]], dim=-1))/(ch-1)
             # Sum messages
-            latents.index_add_(0, message_to, message)
+            latents = latents.index_add(0, message_to, message)
+            #latents.put_(message_to, message, accumulate = True)
             #else:
             #    for channel in range(ch):
             #        # divide by ch-1 to take mean
@@ -306,7 +309,8 @@ class MPNN(nn.Module):
 
         # average across nodes 
         y = torch.zeros(batch_size, *latents.shape[1:]).to(latents.device)
-        y.index_add_(0, view_id, latents)/ch
+        y = y.index_add(0, view_id, latents)/ch
+        #y.put_(view_id, latents, accumulate = True)/ch
         return self.readout_net(y)
 
 
@@ -318,9 +322,13 @@ def pretrain(model,
             device,
             loss_fn,
             backup_path = None,
-            log = True):
+            log = True,
+            print_ = False):
     
     model.to(device)
+    if print_:
+        train_loss_col = []
+        val_loss_col = []
     for epoch in range(epochs):
         epoch_loss = 0
         epoch_inst = 0 
@@ -360,10 +368,16 @@ def pretrain(model,
                 log_dict['val_inst_loss'] = val_inst/(i+1)
                 log_dict['val_temp_loss'] = val_temp/(i+1)
             wandb.log(log_dict)
+        if print_:
+            print(f'Epoch {epoch}: train loss {train_loss}, val loss {val_loss/(i+1)}')
+            train_loss_col.append(train_loss)
+            val_loss_col.append(val_loss/(i+1))
 
         if backup_path is not None:
             path = f'{backup_path}/pretrained_model.pt'
             torch.save(model.state_dict(), path)
+    if print_:
+        return train_loss_col, val_loss_col
 
 
 class EarlyStopping:
