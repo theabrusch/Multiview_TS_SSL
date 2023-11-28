@@ -71,7 +71,7 @@ def get_simulated_data_pretraining(simulator_type,
                                    pretraining_setup, 
                                    samples, 
                                    standardize_channels = False, 
-                                   normalize_emisison = True,
+                                   normalize_emission = True,
                                    random_emission_matrix = False, 
                                    n_sources = [5,5], 
                                    groups_of_dep_var = [8, 2], 
@@ -88,7 +88,7 @@ def get_simulated_data_pretraining(simulator_type,
         if isinstance(groups_of_dep_var, list):
             groups_of_dep_var = [np.sum(groups_of_dep_var)]
 
-    simulator = pretraining_data_simulator(n_sources, groups_of_dep_var, sigma, fs, 2*length, normalize_emission=normalize_emisison, simulator_type=simulator_type, seed=seed)
+    simulator = pretraining_data_simulator(n_sources, groups_of_dep_var, sigma, fs, 2*length, normalize_emission=normalize_emission, simulator_type=simulator_type, seed=seed)
         
     train = torch.Tensor(simulator.generate(samples[0], random_emission_matrix=random_emission_matrix)).transpose(1,2)
     val = torch.Tensor(simulator.generate(samples[1], random_emission_matrix=random_emission_matrix)).transpose(1,2)

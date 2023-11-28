@@ -138,7 +138,7 @@ class multiview_data_simulator():
             return x
         
 class finetuning_simulator():
-    def __init__(self, n_sources, groups_of_dep_var, n_states, n_state_sources, sigma, fs, length, normalize_emission = False, seed = 42):
+    def __init__(self, n_sources, groups_of_dep_var, n_states, sigma, fs, length, n_state_sources = 1, normalize_emission = False, seed = 42):
         self.n_sources = n_sources if isinstance(n_sources, list) else groups_of_dep_var*[n_sources]
         self.groups_of_dep_var = groups_of_dep_var
         self.sigma = sigma
