@@ -143,9 +143,9 @@ def get_simulated_data_finetuning(finetune_setup,
     val = simulator.generate(samples[1])
     test = simulator.generate(samples[2])
 
-    X_train, y_train = torch.Tensor(train[0]).transpose(1,2), torch.Tensor(train[1]).long()
-    X_val, y_val = torch.Tensor(val[0]).transpose(1,2), torch.Tensor(val[1]).long()
-    X_test, y_test = torch.Tensor(test[0]).transpose(1,2), torch.Tensor(test[1]).long()
+    X_train, y_train = torch.Tensor(train[0]).transpose(1,2), torch.Tensor(train[1]).long().squeeze(1)
+    X_val, y_val = torch.Tensor(val[0]).transpose(1,2), torch.Tensor(val[1]).long().squeeze(1)
+    X_test, y_test = torch.Tensor(test[0]).transpose(1,2), torch.Tensor(test[1]).long().squeeze(1)
 
     train_dset = SSL_dataset(X_train, y_train, standardize_channels=standardize_channels)
     val_dset = SSL_dataset(X_val, y_val, standardize_channels=standardize_channels)
