@@ -45,7 +45,6 @@ class pretraining_data_simulator():
         np.random.seed(None)
         if return_sources:
             sources = np.zeros((n_samples, round(self.length*self.fs), np.sum(self.n_sources)))
-            freqs = np.zeros((n_samples, np.sum(self.n_sources)))
 
         for n in range(n_samples):
             if random_emission_matrix:
@@ -54,9 +53,10 @@ class pretraining_data_simulator():
                 em_matrix = self.emission_matrix
             
             if self.simulator_type == 'simulated_cpc':
-                freqs_1 = np.random.uniform(1, (self.fs/2), (np.sum(self.n_sources), 1))
-                freqs_2 = freqs_1
-                source = np.sin(freqs_1 * t + phase_shift[n]).T
+                freq_1 = np.random.uniform(1, (self.fs/2)/2, (self.n_sources[0], 1))
+                freq_2 = np.random.uniform((self.fs/2)/2, self.fs/2, (self.n_sources[1], 1))
+                freq = np.concatenate([freq_1, freq_2], axis = 0)
+                source = np.sin(freq * t + phase_shift[n]).T
                 
             else:
                 freqs_1 = np.random.uniform(1, (self.fs/2)/2, (np.sum(self.n_sources), 1))
@@ -68,15 +68,14 @@ class pretraining_data_simulator():
             
             if return_sources:
                 sources[n,:,:]= source
-                freqs[n,:] = np.concatenate(freqs_1, axis = 0).flatten()
 
         # Add noise
         x += np.random.normal(0, self.sigma, (n_samples, round(self.length*self.fs), np.sum(self.groups_of_dep_var)))
         # randomly shuffle the variables
         if return_sources:
             if shuffle_variables:
-                return x[:, :, self.var_idx], sources, self.emission_matrix[:, self.var_idx], freqs
-            return x, sources, self.emission_matrix, freqs
+                return x[:, :, self.var_idx], sources, self.emission_matrix[:, self.var_idx]
+            return x, sources, self.emission_matrix
         else:
             return x[:, :, self.var_idx]
         

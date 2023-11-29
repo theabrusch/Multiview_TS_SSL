@@ -1,7 +1,7 @@
 from torch.utils.data import DataLoader
 from torch.utils.data.sampler import WeightedRandomSampler
 from src.datasets.eegdataset import construct_eeg_datasets
-from src.datasets.datasets import get_simulated_data_finetuning, get_simulated_data_pretraining, load_numpy_files, load_ninaprodb2
+from src.datasets.datasets import get_simulated_data_finetuning, get_simulated_data_pretraining, load_numpy_files, load_ninaprodb2, load_grapgmyo
 import numpy as np
 
 def get_dataloaders_pretraining(args, subsample=False):
@@ -24,8 +24,8 @@ def get_dataloaders_pretraining(args, subsample=False):
     if args.pretraining_setup == 'cpc':
         time_length = time_length // 2
 
-    train_loader = DataLoader(train_dset, batch_size = args.batchsize, shuffle = True, drop_last=False)
-    val_loader = DataLoader(val_dset, batch_size = args.batchsize, drop_last=False)
+    train_loader = DataLoader(train_dset, batch_size = args.batchsize, shuffle = True, drop_last=False, num_workers=2)
+    val_loader = DataLoader(val_dset, batch_size = args.batchsize, drop_last=False, num_workers=2)
     return train_loader, val_loader, dset, (channels, time_length, num_classes)
 
 def get_dataloaders_finetuning(args, balanced_sampling, sample_generator = None, seed = 42):
@@ -38,6 +38,9 @@ def get_dataloaders_finetuning(args, balanced_sampling, sample_generator = None,
         n_samples = [10000, 1000, 1000]
         balanced_sampling = False
         train_dset, val_dset, test_dset, (channels, time_length, num_classes) = get_simulated_data_finetuning(dset, n_samples, standardize_channels=args.standardize_channels)
+    elif 'grabgmyo' in args.data_path:
+        dset = args.data_path.split('/')[-2]
+        train_dset, val_dset, test_dset, (channels, time_length, num_classes) = load_grapgmyo(args.data_path,  window_size = args.window_size, overlap = args.overlap, standardize_channels=args.standardize_channels)
     else:
         dset = args.data_path.split('/')[-2]
         train_dset, val_dset, test_dset, (channels, time_length, num_classes) = load_numpy_files(args.data_path, standardize_channels= args.standardize_channels)
@@ -46,10 +49,10 @@ def get_dataloaders_finetuning(args, balanced_sampling, sample_generator = None,
         sample_weights_train, length_train, sample_weights_val, length_val = get_label_balance(train_dset, val_dset, sample_generator = sample_generator, seed = seed)
         train_loader, val_loader = get_train_val_loaders(train_dset, val_dset, args.batchsize, sample_weights_train, length_train, sample_weights_val, length_val)
     else:
-        train_loader = [DataLoader(train_dset, batch_size = args.batchsize, shuffle = True, drop_last=False)]
-        val_loader = [DataLoader(val_dset, batch_size = args.batchsize, drop_last=False)]
+        train_loader = [DataLoader(train_dset, batch_size = args.batchsize, shuffle = True, drop_last=False, num_workers=2)]
+        val_loader = [DataLoader(val_dset, batch_size = args.batchsize, drop_last=False, num_workers=2)]
 
-    test_loader = DataLoader(test_dset, batch_size = args.batchsize, drop_last=False)
+    test_loader = DataLoader(test_dset, batch_size = args.batchsize, drop_last=False, num_workers=2)
     return train_loader, val_loader, test_loader, dset, (channels, time_length, num_classes)
 
 

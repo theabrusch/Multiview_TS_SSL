@@ -41,13 +41,47 @@ def load_numpy_files(data_path, standardize_channels = True, combine_all = False
         test_dset = SSL_dataset(test['samples'], test['labels'], standardize_channels=standardize_channels)
     return train_dset, val_dset, test_dset, (channels, time_length, num_classes)
 
-def load_grapgmyo(data_path, standardize_channels = True):
+def window_data(data, window_size, overlap):
+    window_length = int(window_size*data.shape[0])
+    overlap_length = int(overlap*data.shape[0])
+    windows = np.zeros((int((data.shape[0]-window_length)/overlap_length), data.shape[1], window_length))
+    for i in range(windows.shape[0]):
+        windows[i,:,:] = data[i*overlap_length:i*overlap_length+window_length, :].T
+    return windows
+
+def load_grapgmyo(data_path, window_size, overlap, standardize_channels = True):
     files = os.listdir(data_path)
     subjects = np.unique([file.split('-')[-1] for file in files])
-    train, val = train_test_split(subjects, test_size=0.2, random_state=42)
+    train, test = train_test_split(subjects, test_size=0.2, random_state=42)
+    train, val = train_test_split(train, test_size=0.25, random_state=42)
     train_data, train_labels = [], []
     val_data, val_labels = [], []
-    return None
+    test_data, test_labels = [], []
+    for file in files:
+        subject = file.split('-')[-1]
+        data = np.load(data_path + file)
+        windows = window_data(data['data'], window_size=window_size, overlap=overlap)
+        labels = np.zeros((windows.shape[0]))
+        labels[:] = data['gesture']
+        if subject in train:
+            train_data.append(windows)
+            train_labels.append(labels)
+        elif subject in val:
+            val_data.append(windows)
+            val_labels.append(labels)
+        elif subject in test:
+            test_data.append(windows)
+            test_labels.append(labels)
+    train_data, train_labels = torch.Tensor(np.concatenate(train_data)).transpose(1,2), torch.Tensor(np.concatenate(train_labels)).long()
+    val_data, val_labels = torch.Tensor(np.concatenate(val_data)).transpose(1,2), torch.Tensor(np.concatenate(val_labels)).long()
+    test_data, test_labels = torch.Tensor(np.concatenate(test_data)).transpose(1,2), torch.Tensor(np.concatenate(test_labels)).long()
+    train_dset = SSL_dataset(train_data, train_labels, standardize_channels=standardize_channels)
+    val_dset = SSL_dataset(val_data, val_labels, standardize_channels=standardize_channels)
+    test_dset = SSL_dataset(test_data, test_labels, standardize_channels=standardize_channels)
+    channels = train_data.shape[1]
+    time_length = train_data.shape[2]
+    num_classes = len(torch.unique(train_labels))
+    return train_dset, val_dset, test_dset, (channels, time_length, num_classes)
 
 def load_ninaprodb2(data_path, standardize_channels = True):
     path = data_path 
@@ -88,8 +122,8 @@ def get_simulated_data_pretraining(simulator_type,
                                    length = 30,
                                    seed = 42):
     if simulator_type == 'simulated_cpc':
-        groups_of_dep_var = 5*[2]
-        n_sources = len(groups_of_dep_var)*[3]
+        groups_of_dep_var = 2*[5]
+        n_sources = len(groups_of_dep_var)*[5]
     elif simulator_type == 'simulated_multiview':
         if isinstance(n_sources, list):
             n_sources = [np.sum(n_sources)]
@@ -126,12 +160,8 @@ def get_simulated_data_finetuning(finetune_setup,
                                   length = 30,
                                   seed = 42):
     if finetune_setup == 'simulated_cpc':
-        if len(n_sources) == 1:
-            n_sources = [n_sources[0], n_sources[0]]
-        if len(groups_of_dep_var) == 1:
-            groups_of_dep_var = [groups_of_dep_var[0], groups_of_dep_var[0]]
-        groups_of_dep_var = 5*[2]
-        n_sources = len(groups_of_dep_var)*[3]
+        groups_of_dep_var = 2*[5]
+        n_sources = len(groups_of_dep_var)*[5]
     elif finetune_setup == 'simulated_multiview':
         if len(n_sources) > 1:
             n_sources = [np.sum(n_sources)]
