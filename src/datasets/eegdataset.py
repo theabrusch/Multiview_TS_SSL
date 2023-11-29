@@ -30,9 +30,10 @@ def construct_eeg_datasets(data_path,
     dset = data_path.split('/')[-1].strip('.yml').split('_')[0]
     config = experiment.datasets[dset]
     config.normalize = False
+    config.chunk_duration = chunk_duration
+    config.tlen = int(chunk_duration) 
 
     if bendr_setup and upsample_bendr:
-        config.chunk_duration = chunk_duration
         config.upsample = False
     else:
         config.upsample = False
