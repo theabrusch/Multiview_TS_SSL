@@ -41,6 +41,14 @@ def load_numpy_files(data_path, standardize_channels = True, combine_all = False
         test_dset = SSL_dataset(test['samples'], test['labels'], standardize_channels=standardize_channels)
     return train_dset, val_dset, test_dset, (channels, time_length, num_classes)
 
+def load_grapgmyo(data_path, standardize_channels = True):
+    files = os.listdir(data_path)
+    subjects = np.unique([file.split('-')[-1] for file in files])
+    train, val = train_test_split(subjects, test_size=0.2, random_state=42)
+    train_data, train_labels = [], []
+    val_data, val_labels = [], []
+    return None
+
 def load_ninaprodb2(data_path, standardize_channels = True):
     path = data_path 
     files = os.listdir(path)
@@ -129,7 +137,7 @@ def get_simulated_data_finetuning(finetune_setup,
             n_sources = [np.sum(n_sources)]
         if len(groups_of_dep_var) > 1:
             groups_of_dep_var = [np.sum(groups_of_dep_var)]
-    simulator = finetuning_simulator(finetune_setup, n_sources, groups_of_dep_var, n_states, sigma, fs, length, normalize_emission=normalize_emission, seed = seed)
+    simulator = finetuning_simulator(n_sources, groups_of_dep_var, n_states, sigma, fs, length, normalize_emission=normalize_emission, seed = seed)
 
     train = simulator.generate(samples[0])
     val = simulator.generate(samples[1])

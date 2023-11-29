@@ -126,7 +126,7 @@ if __name__ == '__main__':
 
     # data arguments
     # path to config files. Remember to change paths in config files. 
-    parser.add_argument('--data_path', type = str, default = 'sleepedf_local.yml')
+    parser.add_argument('--data_path', type = str, default = 'simulated_cpc')
     # whether or not to sample balanced during finetuning
     parser.add_argument('--balanced_sampling', type = eval, default = True)
     # number of samples to finetune on. Can be list for multiple runs
