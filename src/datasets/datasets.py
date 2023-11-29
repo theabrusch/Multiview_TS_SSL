@@ -4,6 +4,7 @@ from torch.nn import functional as F
 import numpy as np
 from src.datasets.simulated_data import pretraining_data_simulator, finetuning_simulator
 from sklearn.model_selection import train_test_split
+from scipy.io import loadmat
 import os
 
 def load_numpy_files(data_path, standardize_channels = True, combine_all = False, subsample = False):
@@ -51,6 +52,7 @@ def window_data(data, window_size, overlap):
 
 def load_grapgmyo(data_path, window_size, overlap, standardize_channels = True):
     files = os.listdir(data_path)
+    files = [file for file in files if not file == '.DS_Store']
     subjects = np.unique([file.split('-')[-1] for file in files])
     train, test = train_test_split(subjects, test_size=0.2, random_state=42)
     train, val = train_test_split(train, test_size=0.25, random_state=42)
@@ -59,19 +61,23 @@ def load_grapgmyo(data_path, window_size, overlap, standardize_channels = True):
     test_data, test_labels = [], []
     for file in files:
         subject = file.split('-')[-1]
-        data = np.load(data_path + file)
-        windows = window_data(data['data'], window_size=window_size, overlap=overlap)
-        labels = np.zeros((windows.shape[0]))
-        labels[:] = data['gesture']
-        if subject in train:
-            train_data.append(windows)
-            train_labels.append(labels)
-        elif subject in val:
-            val_data.append(windows)
-            val_labels.append(labels)
-        elif subject in test:
-            test_data.append(windows)
-            test_labels.append(labels)
+        subj_files = os.listdir(data_path + file)
+        subj_files = [subj_file for subj_file in subj_files if not subj_file == '.DS_Store']
+        for subj_file in subj_files:
+            data = loadmat(data_path + file + '/' + subj_file)
+            windows = window_data(data['data'], window_size=window_size, overlap=overlap)
+            labels = np.zeros((windows.shape[0]))
+            labels[:] = data['gesture']
+            if subject in train:
+                train_data.append(windows)
+                train_labels.append(labels)
+            elif subject in val:
+                val_data.append(windows)
+                val_labels.append(labels)
+            elif subject in test:
+                test_data.append(windows)
+                test_labels.append(labels)
+
     train_data, train_labels = torch.Tensor(np.concatenate(train_data)).transpose(1,2), torch.Tensor(np.concatenate(train_labels)).long()
     val_data, val_labels = torch.Tensor(np.concatenate(val_data)).transpose(1,2), torch.Tensor(np.concatenate(val_labels)).long()
     test_data, test_labels = torch.Tensor(np.concatenate(test_data)).transpose(1,2), torch.Tensor(np.concatenate(test_labels)).long()
