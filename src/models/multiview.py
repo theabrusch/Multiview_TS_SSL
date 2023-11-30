@@ -119,7 +119,7 @@ class Multiview(nn.Module):
                  nlayers = 6,
                  out_dim = 64,
                  projection_head = True,
-                 n_layers_proj = 1,
+                 n_layers_proj = 2,
                  embedding_dim = 32,
                  loss = 'time_loss',
                  model_setup = 'nonMPNN', 
