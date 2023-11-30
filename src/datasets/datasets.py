@@ -175,9 +175,9 @@ def get_simulated_data_finetuning(finetune_setup,
             groups_of_dep_var = [np.sum(groups_of_dep_var)]
     simulator = finetuning_simulator(n_sources, groups_of_dep_var, n_states, sigma, fs, length, normalize_emission=normalize_emission, seed = seed)
 
-    train = simulator.generate(samples[0])
-    val = simulator.generate(samples[1])
-    test = simulator.generate(samples[2])
+    train = simulator.generate(samples[0], random_freqs=True)
+    val = simulator.generate(samples[1], random_freqs=True)
+    test = simulator.generate(samples[2], random_freqs=True)
 
     X_train, y_train = torch.Tensor(train[0]).transpose(1,2), torch.Tensor(train[1]).long().squeeze(1)
     X_val, y_val = torch.Tensor(val[0]).transpose(1,2), torch.Tensor(val[1]).long().squeeze(1)
