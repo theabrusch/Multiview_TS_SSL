@@ -6,6 +6,7 @@ from src.datasets.simulated_data import pretraining_data_simulator, finetuning_s
 from sklearn.model_selection import train_test_split
 from scipy.io import loadmat
 import os
+import glob
 
 def load_numpy_files(data_path, standardize_channels = True, combine_all = False, subsample = False):
     train = torch.load(data_path + 'train.pt')
@@ -42,6 +43,31 @@ def load_numpy_files(data_path, standardize_channels = True, combine_all = False
         test_dset = SSL_dataset(test['samples'], test['labels'], standardize_channels=standardize_channels)
     return train_dset, val_dset, test_dset, (channels, time_length, num_classes)
 
+def load_physionet(data_path, standardize_channels = True):
+    subsets = os.listdir(data_path)
+    subsets = [subset for subset in subsets if not subset == '.DS_Store']
+    train_data = []
+    val_data = []
+    for s in subsets:
+        search_path = os.path.join(data_path, s, "**/*.mat")
+        fnames = glob.glob(search_path, recursive=True)
+        train, val = train_test_split(fnames, test_size=0.2, random_state=42)
+        for file in train:
+            data = loadmat(file)
+            if data['feats'].shape[1] == 5000:
+                train_data.append(torch.Tensor(data['feats']))
+        for file in val:
+            data = loadmat(file)
+            if data['feats'].shape[1] == 5000:
+                val_data.append(torch.Tensor(data['feats']))
+
+    train_dset = SSL_dataset(train_data, torch.zeros(len(train_data)), standardize_channels=standardize_channels)
+    val_dset = SSL_dataset(val_data, torch.zeros(len(val_data)), standardize_channels=standardize_channels)
+    channels = train_data[0].shape[0]
+    time_length = train_data[0].shape[1]
+    num_classes = 1
+    return train_dset, val_dset, (channels, time_length, num_classes)
+    
 def window_data(data, window_size, overlap):
     window_length = int(window_size*data.shape[0])
     overlap_length = int(overlap*data.shape[0])

@@ -1,7 +1,7 @@
 from torch.utils.data import DataLoader
 from torch.utils.data.sampler import WeightedRandomSampler
 from src.datasets.eegdataset import construct_eeg_datasets
-from src.datasets.datasets import get_simulated_data_finetuning, get_simulated_data_pretraining, load_numpy_files, load_ninaprodb2, load_grapgmyo
+from src.datasets.datasets import get_simulated_data_finetuning, get_simulated_data_pretraining, load_numpy_files, load_ninaprodb2, load_grapgmyo, load_physionet
 import numpy as np
 
 def get_dataloaders_pretraining(args, subsample=False):
@@ -16,6 +16,9 @@ def get_dataloaders_pretraining(args, subsample=False):
     elif 'ninaprodb2' in args.data_path:
         dset = args.data_path.split('/')[-2]
         train_dset, val_dset, (channels, time_length, num_classes) = load_ninaprodb2(args.data_path, standardize_channels=args.standardize_channels)
+    elif 'physionet2021' in args.data_path:
+        dset = args.data_path.split('/')[-2]
+        train_dset, val_dset, (channels, time_length, num_classes) = load_physionet(args.data_path, standardize_channels= args.standardize_channels)
     else:
         dset = args.data_path.split('/')[-2]
         # uniform method for loading ecg datasets
