@@ -87,7 +87,9 @@ class Wave2Vec(nn.Module):
                  input_shape, 
                  out_dim = 64, 
                  hidden_channels = 512, 
-                 nlayers = 6, do = 0.1, 
+                 nlayers = 6, 
+                 width = 3,
+                 do = 0.1, 
                  stride = 'width',
                  norm = 'group',
                  ):
@@ -113,6 +115,7 @@ class Multiview(nn.Module):
                  orig_channels,
                  num_classes,
                  pretraining_setup = None,
+                 data_type = 'eeg',
                  time_length = 33,
                  conv_do = 0.1,
                  hidden_channels = 256, 
@@ -132,6 +135,7 @@ class Multiview(nn.Module):
         self.num_classes = num_classes
         self.out_dim = out_dim
         self.pool = pool
+        self.data_type = data_type
         self.pretraining_setup = pretraining_setup
         self.wave2vec = Wave2Vec(channels, input_shape = time_length, out_dim = out_dim, 
                                  hidden_channels = hidden_channels, nlayers = nlayers, 
@@ -216,7 +220,10 @@ class Multiview(nn.Module):
             time_length = x.size(2)
             half = time_length // 2
             view_1 = x[:, :, :half]
-            view_2 = x[:, :, half:]    
+            view_2 = x[:, :, half:] 
+        elif self.pretraining_setup == 'augment':
+            view_1 = x
+            view_2 = x   
 
         if self.mpnn:
             out1 = self.forward(view_1)
@@ -233,6 +240,8 @@ class Multiview(nn.Module):
             return loss
         else:
             return loss, *[torch.tensor(0)]*2
+        
+
 
 class AverageMPNN(nn.Module):
     def __init__(self):
