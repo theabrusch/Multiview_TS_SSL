@@ -67,20 +67,21 @@ def load_grapgmyo(data_path, window_size, overlap, standardize_channels = True):
             data = loadmat(data_path + file + '/' + subj_file)
             windows = window_data(data['data'], window_size=window_size, overlap=overlap)
             labels = np.zeros((windows.shape[0]))
-            labels[:] = data['gesture']
-            if subject in train:
-                train_data.append(windows)
-                train_labels.append(labels)
-            elif subject in val:
-                val_data.append(windows)
-                val_labels.append(labels)
-            elif subject in test:
-                test_data.append(windows)
-                test_labels.append(labels)
+            if not data['gesture'] in [100, 101]:
+                labels[:] = data['gesture'] - 1
+                if subject in train:
+                    train_data.append(windows)
+                    train_labels.append(labels)
+                elif subject in val:
+                    val_data.append(windows)
+                    val_labels.append(labels)
+                elif subject in test:
+                    test_data.append(windows)
+                    test_labels.append(labels)
 
-    train_data, train_labels = torch.Tensor(np.concatenate(train_data)).transpose(1,2), torch.Tensor(np.concatenate(train_labels)).long()
-    val_data, val_labels = torch.Tensor(np.concatenate(val_data)).transpose(1,2), torch.Tensor(np.concatenate(val_labels)).long()
-    test_data, test_labels = torch.Tensor(np.concatenate(test_data)).transpose(1,2), torch.Tensor(np.concatenate(test_labels)).long()
+    train_data, train_labels = torch.Tensor(np.concatenate(train_data)), torch.Tensor(np.concatenate(train_labels)).long()
+    val_data, val_labels = torch.Tensor(np.concatenate(val_data)), torch.Tensor(np.concatenate(val_labels)).long()
+    test_data, test_labels = torch.Tensor(np.concatenate(test_data)), torch.Tensor(np.concatenate(test_labels)).long()
     train_dset = SSL_dataset(train_data, train_labels, standardize_channels=standardize_channels)
     val_dset = SSL_dataset(val_data, val_labels, standardize_channels=standardize_channels)
     test_dset = SSL_dataset(test_data, test_labels, standardize_channels=standardize_channels)

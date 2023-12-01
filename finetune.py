@@ -126,7 +126,7 @@ if __name__ == '__main__':
 
     # data arguments
     # path to config files. Remember to change paths in config files. 
-    parser.add_argument('--data_path', type = str, default = 'simulated_cpc')
+    parser.add_argument('--data_path', type = str, default = '/Users/theb/Desktop/data/grabgmyo/')
     # whether or not to sample balanced during finetuning
     parser.add_argument('--balanced_sampling', type = eval, default = True)
     # number of samples to finetune on. Can be list for multiple runs
@@ -162,7 +162,7 @@ if __name__ == '__main__':
     parser.add_argument('--ft_learning_rate', type = float, default = 1e-3)
     parser.add_argument('--weight_decay', type = float, default = 5e-4)
     parser.add_argument('--finetune_epochs', type = int, default = 1)
-    parser.add_argument('--batchsize', type = int, default = 128)
+    parser.add_argument('--batchsize', type = int, default = 16)
     args = parser.parse_args()
     main(args)
 
