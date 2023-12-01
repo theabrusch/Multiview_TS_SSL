@@ -77,6 +77,9 @@ def main(args):
         if args.remove_mpnn: # remove the message passing network
             model.mpnn = False
             args.optimize_mpnn = False
+            
+        if args.optimize_encoder:
+            args.optimize_mpnn = True
         # update the classifier to the number of classes in the finetuning dataset
         model.update_classifier(num_classes, orig_channels=orig_channels, pool = args.pool, seed = args.seed)
         # freeze parameters
@@ -115,7 +118,7 @@ if __name__ == '__main__':
     # whether or not to save finetuned models
     parser.add_argument('--save_model', type = eval, default = False)
     parser.add_argument('--load_model', type = eval, default = False)
-    parser.add_argument('--optimize_encoder', type = eval, default = False)
+    parser.add_argument('--optimize_encoder', type = eval, default = True)
     parser.add_argument('--optimize_mpnn', type = eval, default = False)
     parser.add_argument('--pretraining_dset', type = str, default = 'HAR')
     parser.add_argument('--pretraining_setup', type = str, default = 'multiview', choices = ['multiview', 'cpc'])
