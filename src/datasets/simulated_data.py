@@ -159,7 +159,6 @@ class finetuning_simulator():
         self.source_frequencies = np.random.uniform(1, 50, (n_states, np.sum(self.n_sources)))
 
         self.emission_matrix = self.generate_emission_matrix(seed = self.seed)
-
     def generate_emission_matrix(self, seed = None):
         np.random.seed(seed)
         em_matrix = np.random.uniform(0, 1, (np.sum(self.n_sources), np.sum(self.groups_of_dep_var)))
@@ -175,7 +174,7 @@ class finetuning_simulator():
         np.random.seed(None)
         return emission_matrix
     
-    def generate(self, n_samples, return_sources = False, random_freqs = False):
+    def generate(self, n_samples, return_sources = False, random_freqs = False, shuffle_vars = True):
         # Generate the independent variables
         t = np.expand_dims(np.arange(0, self.length, 1/self.fs),0)
         # Generate a random phase shift per sample
@@ -218,6 +217,9 @@ class finetuning_simulator():
             states = states[:, self.y_state]
 
         if return_sources:
-            return x[:, :, self.var_idx], sources, self.emission_matrix[:, self.var_idx], states
+            if shuffle_vars:
+                return x[:, :, self.var_idx], sources, self.emission_matrix[:, self.var_idx], states
+            else:
+                return x, sources, self.emission_matrix, states
         else:
             return x[:, :, self.var_idx], states

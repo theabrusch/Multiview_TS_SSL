@@ -40,7 +40,7 @@ def get_dataloaders_finetuning(args, balanced_sampling, sample_generator = None,
         dset = args.data_path
         n_samples = [10000, 1000, 1000]
         balanced_sampling = False
-        train_dset, val_dset, test_dset, (channels, time_length, num_classes) = get_simulated_data_finetuning(dset, n_samples, standardize_channels=args.standardize_channels)
+        train_dset, val_dset, test_dset, (channels, time_length, num_classes) = get_simulated_data_finetuning(dset, n_samples, standardize_channels=args.standardize_channels, seed = args.seed)
     elif 'grabgmyo' in args.data_path:
         dset = args.data_path.split('/')[-2]
         train_dset, val_dset, test_dset, (channels, time_length, num_classes) = load_grapgmyo(args.data_path,  window_size = args.window_size, overlap = args.overlap, standardize_channels=args.standardize_channels)
