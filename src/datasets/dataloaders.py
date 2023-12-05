@@ -106,7 +106,7 @@ def fixed_label_balance(labels, sample_size = None, seed = 42):
     sample_weights, counts
     """
     labs, counts = np.unique(labels, return_counts=True)
-    if isinstance(sample_size, int):
+    if isinstance(sample_size, int) or isinstance(sample_size, float):
         min_count = [sample_size]
     elif isinstance(sample_size, list):
         min_count = sample_size

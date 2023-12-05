@@ -3,3 +3,4 @@
 */__pycache__/*
 wandb/*
 pretrained_models/*
+physionet.org
