@@ -69,7 +69,7 @@ def main(args):
                 os.makedirs(ft_output_path, exist_ok=True)
 
                 # load model with postfix
-                pretrained_model_path = f'pretrained_models/{args.pretraining_dset}_{args.model_setup}_{args.pretraining_setup}_{args.loss}{args.model_postfix}'
+                pretrained_model_path = f'pretrained_models/{args.pretraining_dset}_{args.model_setup}_{args.pretraining_setup}_{args.loss}{postfix}'
 
                 if args.load_model:
                     model_arg_path = pretrained_model_path + '/args.pkl'
