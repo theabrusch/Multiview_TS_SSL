@@ -78,12 +78,12 @@ def main(args):
 
                 # load model
                 model = load_model(device, model_args, return_loss=False)
+                model.remove_projector()
                 if args.load_model:
                     pretrained_model_path = pretrained_model_path + '/pretrained_model.pt'
-                    model.load_state_dict(torch.load(pretrained_model_path, map_location=device))
+                    model.load_weights(pretrained_model_path, device)
                 
                 # update model parameters for finetuning
-                model.remove_projector()
                 if args.remove_mpnn: # remove the message passing network
                     model.mpnn = False
                     args.optimize_mpnn = False
