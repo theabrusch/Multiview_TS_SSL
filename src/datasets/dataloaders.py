@@ -43,7 +43,7 @@ def get_dataloaders_finetuning(args, balanced_sampling, sample_generator = None,
         train_dset, val_dset, test_dset, (channels, time_length, num_classes) = get_simulated_data_finetuning(dset, n_samples, standardize_channels=args.standardize_channels, seed = args.seed)
     elif 'grabgmyo' in args.data_path:
         dset = args.data_path.split('/')[-2]
-        train_dset, val_dset, test_dset, (channels, time_length, num_classes) = load_grapgmyo(args.data_path,  window_size = args.window_size, overlap = args.overlap, standardize_channels=args.standardize_channels, capgmyo_split='sessionwise')
+        train_dset, val_dset, test_dset, (channels, time_length, num_classes) = load_grapgmyo(args.data_path,  window_size = args.window_size, overlap = args.overlap, standardize_channels=args.standardize_channels, capgmyo_split='sessionwise', standardize_epochs = args.standardize_epochs)
     else:
         dset = args.data_path.split('/')[-2]
         train_dset, val_dset, test_dset, (channels, time_length, num_classes) = load_numpy_files(args.data_path, standardize_channels= args.standardize_channels)
@@ -88,10 +88,10 @@ def get_train_val_loaders(train_dset, val_dset, batchsize, sample_weights_train 
 
     for i in range(sample_weights_train.shape[1]):
         finetune_sampler = WeightedRandomSampler(sample_weights_train[:,i], int(length_train[i]), replacement=False)
-        train_loader.append(DataLoader(train_dset, batch_size=batchsize, sampler=finetune_sampler, shuffle = True, num_workers=2))
+        train_loader.append(DataLoader(train_dset, batch_size=batchsize, sampler=finetune_sampler, num_workers=2))
 
         finetune_val_sampler = WeightedRandomSampler(sample_weights_val[:,i], int(length_val[i]), replacement=False)
-        val_loader.append(DataLoader(val_dset, batch_size=batchsize, sampler=finetune_val_sampler, shuffle = True, num_workers=2))
+        val_loader.append(DataLoader(val_dset, batch_size=batchsize, sampler=finetune_val_sampler, num_workers=2))
     
     return train_loader, val_loader
 

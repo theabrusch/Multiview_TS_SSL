@@ -76,7 +76,7 @@ def window_data(data, window_size, overlap):
         windows[i,:,:] = data[i*overlap_length:i*overlap_length+window_length, :].T
     return windows
 
-def load_grapgmyo(data_path, window_size, overlap, standardize_channels = True, capgmyo_split = 'subjectwise',):
+def load_grapgmyo(data_path, window_size, overlap, standardize_channels = True, capgmyo_split = 'subjectwise', standardize_epochs = False):
     files = os.listdir(data_path)
     files = [file for file in files if not file == '.DS_Store']
     subjects = np.unique([file.split('-')[-1] for file in files])
@@ -118,9 +118,17 @@ def load_grapgmyo(data_path, window_size, overlap, standardize_channels = True, 
     train_data, train_labels = torch.Tensor(np.concatenate(train_data)), torch.Tensor(np.concatenate(train_labels)).long()
     val_data, val_labels = torch.Tensor(np.concatenate(val_data)), torch.Tensor(np.concatenate(val_labels)).long()
     test_data, test_labels = torch.Tensor(np.concatenate(test_data)), torch.Tensor(np.concatenate(test_labels)).long()
-    train_dset = SSL_dataset(train_data, train_labels, standardize_channels=standardize_channels)
-    val_dset = SSL_dataset(val_data, val_labels, standardize_channels=standardize_channels)
-    test_dset = SSL_dataset(test_data, test_labels, standardize_channels=standardize_channels)
+    # shuffle datasets
+    train_idx = np.random.permutation(np.arange(len(train_data)))
+    val_idx = np.random.permutation(np.arange(len(val_data)))
+    test_idx = np.random.permutation(np.arange(len(test_data)))
+    train_data, train_labels = train_data[train_idx], train_labels[train_idx]
+    val_data, val_labels = val_data[val_idx], val_labels[val_idx]
+    test_data, test_labels = test_data[test_idx], test_labels[test_idx]
+    # datasets
+    train_dset = SSL_dataset(train_data, train_labels, standardize_channels=standardize_channels, standardize_epochs=standardize_epochs)
+    val_dset = SSL_dataset(val_data, val_labels, standardize_channels=standardize_channels, standardize_epochs=standardize_epochs)
+    test_dset = SSL_dataset(test_data, test_labels, standardize_channels=standardize_channels, standardize_epochs=standardize_epochs)
     channels = train_data.shape[1]
     time_length = train_data.shape[2]
     num_classes = len(torch.unique(train_labels))
@@ -231,10 +239,11 @@ def get_simulated_data_finetuning(finetune_setup,
     return train_dset, val_dset, test_dset, (channels, time_length, num_classes)
 
 class SSL_dataset(TensorDataset):
-    def __init__(self, X, y, standardize_channels = True):
+    def __init__(self, X, y, standardize_channels = True, standardize_epochs = False):
         self.X = X
         self.y = y
         self.standardize_channels = standardize_channels
+        self.standardize_epochs = standardize_epochs
 
     def __getitem__(self, index):
         x = self.X[index]
@@ -244,6 +253,8 @@ class SSL_dataset(TensorDataset):
             stds = x.std(axis=1, keepdims=True)
             stds[stds == 0.] = 1.
             x = (x - x.mean(axis=1, keepdims=True)) / stds
+        elif self.standardize_epochs:
+            x = (x - x.mean()) / x.std()
         
         return x, y
 

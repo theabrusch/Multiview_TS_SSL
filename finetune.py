@@ -116,7 +116,7 @@ if __name__ == '__main__':
     parser.add_argument('--log', type = eval, default = True) # whether or not to log to wandb
     # whether or not to save finetuned models
     parser.add_argument('--save_model', type = eval, default = False)
-    parser.add_argument('--load_model', type = eval, default = True)
+    parser.add_argument('--load_model', type = eval, default = False)
     parser.add_argument('--optimize_encoder', type = eval, default = True)
     parser.add_argument('--optimize_mpnn', type = eval, default = False)
     parser.add_argument('--pretraining_dset', type = str, default = 'simulated_cpc')
@@ -134,6 +134,7 @@ if __name__ == '__main__':
     # number of samples to finetune on. Can be list for multiple runs
     parser.add_argument('--sample_generator', type = eval, nargs = '+', default = [10, 20, None])
     parser.add_argument('--standardize_channels', type = eval, default = True)
+    parser.add_argument('--standardize_epochs', type = eval, default = False)
     parser.add_argument('--window_size', type = float, default = 0.2)
     parser.add_argument('--overlap', type = float, default = 0.05)
 
