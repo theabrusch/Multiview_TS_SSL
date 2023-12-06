@@ -137,6 +137,7 @@ def main(args):
         # update the classifier to the number of classes in the finetuning dataset
         model.update_classifier(num_classes, orig_channels=orig_channels, pool = args.pool, seed = args.seed)
         model.load_state_dict(torch.load(best_model_path + '/finetuned_model.pt', map_location=device))
+        model.to(device)
 
 
         accuracy, prec, rec, f, auc = evaluate_classifier(model, test_loader, device)
