@@ -150,7 +150,7 @@ def main(args):
             # delete ft_output_path folder to save memory
             shutil.rmtree(output_path)
         # save results file
-        res_path = f'outputs/{args.pretraining_dset}_{args.pretraining_setup}_{args.loss}{args.model_postfix}_{dset}_results.pkl'
+        res_path = f'outputs/{args.pretraining_dset}_{args.pretraining_setup}_{args.loss}{args.model_postfix}_{dset}_{args.seed}_results.pkl'
         with open(res_path, 'wb') as f:
             pickle.dump(results, f)
         if args.log:
