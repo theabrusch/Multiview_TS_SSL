@@ -76,12 +76,17 @@ def window_data(data, window_size, overlap):
         windows[i,:,:] = data[i*overlap_length:i*overlap_length+window_length, :].T
     return windows
 
-def load_grapgmyo(data_path, window_size, overlap, standardize_channels = True):
+def load_grapgmyo(data_path, window_size, overlap, standardize_channels = True, capgmyo_split = 'subjectwise',):
     files = os.listdir(data_path)
     files = [file for file in files if not file == '.DS_Store']
     subjects = np.unique([file.split('-')[-1] for file in files])
-    train, test = train_test_split(subjects, test_size=0.2, random_state=42)
-    train, val = train_test_split(train, test_size=0.25, random_state=42)
+    sessions = ['001', '002', '003', '004', '005', '006', '007', '008', '009', '010']
+    if capgmyo_split == 'subjectwise':
+        train, test = train_test_split(subjects, test_size=0.2, random_state=42)
+        train, val = train_test_split(train, test_size=0.25, random_state=42)
+    else:
+        train, val, test = ['001', '002', '003', '004'], ['005'], ['006', '007', '008', '009', '010']
+
     train_data, train_labels = [], []
     val_data, val_labels = [], []
     test_data, test_labels = [], []
@@ -91,17 +96,22 @@ def load_grapgmyo(data_path, window_size, overlap, standardize_channels = True):
         subj_files = [subj_file for subj_file in subj_files if not subj_file == '.DS_Store']
         for subj_file in subj_files:
             data = loadmat(data_path + file + '/' + subj_file)
+            session = subj_file.split('.')[0].split('-')[-1]
             windows = window_data(data['data'], window_size=window_size, overlap=overlap)
             labels = np.zeros((windows.shape[0]))
+            if capgmyo_split == 'subjectwise':
+                split_by = subject
+            else:
+                split_by = session
             if not data['gesture'] in [100, 101]:
                 labels[:] = data['gesture'] - 1
-                if subject in train:
+                if split_by in train:
                     train_data.append(windows)
                     train_labels.append(labels)
-                elif subject in val:
+                elif split_by in val:
                     val_data.append(windows)
                     val_labels.append(labels)
-                elif subject in test:
+                elif split_by in test:
                     test_data.append(windows)
                     test_labels.append(labels)
 
