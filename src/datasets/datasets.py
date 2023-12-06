@@ -69,8 +69,8 @@ def load_physionet(data_path, standardize_channels = True):
     return train_dset, val_dset, (channels, time_length, num_classes)
     
 def window_data(data, window_size, overlap):
-    window_length = int(window_size*data.shape[0])
-    overlap_length = int(overlap*data.shape[0])
+    window_length = int(window_size*1000)
+    overlap_length = int(overlap*1000)
     windows = np.zeros((int((data.shape[0]-window_length)/overlap_length), data.shape[1], window_length))
     for i in range(windows.shape[0]):
         windows[i,:,:] = data[i*overlap_length:i*overlap_length+window_length, :].T

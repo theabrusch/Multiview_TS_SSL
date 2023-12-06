@@ -88,10 +88,10 @@ def get_train_val_loaders(train_dset, val_dset, batchsize, sample_weights_train 
 
     for i in range(sample_weights_train.shape[1]):
         finetune_sampler = WeightedRandomSampler(sample_weights_train[:,i], int(length_train[i]), replacement=False)
-        train_loader.append(DataLoader(train_dset, batch_size=batchsize, sampler=finetune_sampler, num_workers=2))
+        train_loader.append(DataLoader(train_dset, batch_size=batchsize, sampler=finetune_sampler, shuffle = True, num_workers=2))
 
         finetune_val_sampler = WeightedRandomSampler(sample_weights_val[:,i], int(length_val[i]), replacement=False)
-        val_loader.append(DataLoader(val_dset, batch_size=batchsize, sampler=finetune_val_sampler, num_workers=2))
+        val_loader.append(DataLoader(val_dset, batch_size=batchsize, sampler=finetune_val_sampler, shuffle = True, num_workers=2))
     
     return train_loader, val_loader
 
