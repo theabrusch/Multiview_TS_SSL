@@ -69,11 +69,10 @@ def main(args):
 
         # load model
         model = load_model(device, model_args, return_loss=False)
-        if args.load_model:
-            model.load_state_dict(torch.load(pretrained_model_path, map_location=device))
-        
-        # update model parameters for finetuning
         model.remove_projector()
+        if args.load_model:
+            model.load_weights(pretrained_model_path, device)
+                
         if args.remove_mpnn: # remove the message passing network
             model.mpnn = False
             args.optimize_mpnn = False
@@ -117,10 +116,10 @@ if __name__ == '__main__':
     parser.add_argument('--log', type = eval, default = True) # whether or not to log to wandb
     # whether or not to save finetuned models
     parser.add_argument('--save_model', type = eval, default = False)
-    parser.add_argument('--load_model', type = eval, default = False)
+    parser.add_argument('--load_model', type = eval, default = True)
     parser.add_argument('--optimize_encoder', type = eval, default = True)
     parser.add_argument('--optimize_mpnn', type = eval, default = False)
-    parser.add_argument('--pretraining_dset', type = str, default = 'HAR')
+    parser.add_argument('--pretraining_dset', type = str, default = 'simulated_cpc')
     parser.add_argument('--pretraining_setup', type = str, default = 'multiview', choices = ['multiview', 'cpc'])
     parser.add_argument('--model_setup', type = str, default = 'MPNN', choices = ['MPNN', 'nonMPNN', 'average'])
     parser.add_argument('--model_postfix', type = str, default = '')
@@ -159,7 +158,7 @@ if __name__ == '__main__':
     parser.add_argument('--sample_test_subjects', type = eval, default = 2)
 
     # optimizer arguments
-    parser.add_argument('--loss', type = str, default = 'contrastive', choices = ['time_loss', 'contrastive', 'COCOA'])
+    parser.add_argument('--loss', type = str, default = 'time_loss', choices = ['time_loss', 'contrastive', 'COCOA'])
     # whether or not to compute performance on test set during training
     parser.add_argument('--track_test_performance', type = eval, default = True)
     parser.add_argument('--ft_learning_rate', type = float, default = 1e-3)

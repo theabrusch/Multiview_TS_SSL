@@ -178,7 +178,13 @@ class Multiview(nn.Module):
             return self.classifier(out)            
         else:
             return out
-    
+    def load_weights(self, path, device):
+        weights = torch.load(path, map_location = device)
+        # filter out projector weights
+        weights = {k:v for k,v in weights.items() if not 'projector' in k}
+        self.load_state_dict(weights)
+        
+
     def remove_projector(self):
         self.projector = nn.Identity()
 
