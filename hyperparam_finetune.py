@@ -87,6 +87,8 @@ def main(args):
                 if args.remove_mpnn: # remove the message passing network
                     model.mpnn = False
                     args.optimize_mpnn = False
+                if args.optimize_encoder:
+                    args.optimize_mpnn = True
                 # update the classifier to the number of classes in the finetuning dataset
                 model.update_classifier(num_classes, orig_channels=orig_channels, pool = args.pool, seed = args.seed)
                 # freeze parameters
