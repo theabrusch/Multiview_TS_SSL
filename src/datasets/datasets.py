@@ -75,7 +75,7 @@ def window_data(data, window_size, overlap):
     data = np.apply_along_axis(lambda m: np.convolve(m, np.ones((7,))/7, mode='valid'), axis=0, arr=aFile)
     windows = np.zeros((int((data.shape[0]-window_length)/overlap_length), data.shape[1], window_length))
     for i in range(windows.shape[0]):
-        win = data[i*overlap_length:i*overlap_length+window_length,:]
+        win = data[i*overlap_length:i*overlap_length+window_length,:].T
         windows[i,:,:] = win
     return windows
 
