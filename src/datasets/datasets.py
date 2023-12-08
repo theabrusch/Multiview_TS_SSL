@@ -71,10 +71,10 @@ def load_physionet(data_path, standardize_channels = True):
 def window_data(data, window_size, overlap):
     window_length = int(window_size*1000)
     overlap_length = int(overlap*1000)
+    aFile = np.abs(data)
+    data = np.apply_along_axis(lambda m: np.convolve(m, np.ones((7,))/7, mode='valid'), axis=0, arr=aFile)
     windows = np.zeros((int((data.shape[0]-window_length)/overlap_length), data.shape[1], window_length))
     for i in range(windows.shape[0]):
-        win = np.abs(data[i*overlap_length:i*overlap_length+window_length, :].T)
-        win = np.apply_along_axis(lambda m: np.convolve(m, np.ones((7,))/7, mode='valid'), axis=0, arr=win)
         windows[i,:,:] = win
     return windows
 
