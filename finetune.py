@@ -142,7 +142,7 @@ if __name__ == '__main__':
     parser.add_argument('--remove_mpnn', type = eval, default = False)
     parser.add_argument('--nlayers', type = int, default = 3)
     # early stopping criterion during finetuning. Can be loss or accuracy (on validation set)
-    parser.add_argument('--early_stopping_criterion', type = str, default = None, choices = [None, 'loss', 'acc'])
+    parser.add_argument('--early_stopping_criterion', type = str, default = None, choices = ['None', None, 'loss', 'acc'])
     parser.add_argument('--pool', type = str, default = 'adapt_avg', choices = ['adapt_avg', 'flatten'])
     parser.add_argument('--conv_do', type = float, default = 0.1)
     parser.add_argument('--feat_do', type = float, default = 0.1)
