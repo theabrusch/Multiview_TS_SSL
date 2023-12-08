@@ -73,14 +73,21 @@ def window_data(data, window_size, overlap):
     overlap_length = int(overlap*1000)
     windows = np.zeros((int((data.shape[0]-window_length)/overlap_length), data.shape[1], window_length))
     for i in range(windows.shape[0]):
-        windows[i,:,:] = data[i*overlap_length:i*overlap_length+window_length, :].T
+        win = np.abs(data[i*overlap_length:i*overlap_length+window_length, :].T)
+        win = np.apply_along_axis(lambda m: np.convolve(m, np.ones((7,))/7, mode='valid'), axis=0, arr=7)
+        windows[i,:,:] = win
     return windows
 
-def load_grapgmyo(data_path, window_size, overlap, standardize_channels = True, capgmyo_split = 'subjectwise', standardize_epochs = False):
+def load_grapgmyo(data_path, 
+                  window_size, 
+                  overlap, 
+                  standardize_channels = True, 
+                  capgmyo_split = 'subjectwise', 
+                  standardize_epochs = False, 
+                  subjects_to_load = 'all'):
     files = os.listdir(data_path)
     files = [file for file in files if not file == '.DS_Store']
     subjects = np.unique([file.split('-')[-1] for file in files])
-    sessions = ['001', '002', '003', '004', '005', '006', '007', '008', '009', '010']
     if capgmyo_split == 'subjectwise':
         train, test = train_test_split(subjects, test_size=0.2, random_state=42)
         train, val = train_test_split(train, test_size=0.25, random_state=42)
@@ -92,28 +99,29 @@ def load_grapgmyo(data_path, window_size, overlap, standardize_channels = True, 
     test_data, test_labels = [], []
     for file in files:
         subject = file.split('-')[-1]
-        subj_files = os.listdir(data_path + file)
-        subj_files = [subj_file for subj_file in subj_files if not subj_file == '.DS_Store']
-        for subj_file in subj_files:
-            data = loadmat(data_path + file + '/' + subj_file)
-            session = subj_file.split('.')[0].split('-')[-1]
-            windows = window_data(data['data'], window_size=window_size, overlap=overlap)
-            labels = np.zeros((windows.shape[0]))
-            if capgmyo_split == 'subjectwise':
-                split_by = subject
-            else:
-                split_by = session
-            if not data['gesture'] in [100, 101]:
-                labels[:] = data['gesture'] - 1
-                if split_by in train:
-                    train_data.append(windows)
-                    train_labels.append(labels)
-                elif split_by in val:
-                    val_data.append(windows)
-                    val_labels.append(labels)
-                elif split_by in test:
-                    test_data.append(windows)
-                    test_labels.append(labels)
+        if subjects_to_load == 'all' or subject in subjects_to_load:
+            subj_files = np.sort(os.listdir(data_path + file))
+            subj_files = [subj_file for subj_file in subj_files if not subj_file == '.DS_Store']
+            for subj_file in subj_files:
+                data = loadmat(data_path + file + '/' + subj_file)
+                session = subj_file.split('.')[0].split('-')[-1]
+                windows = window_data(data['data'], window_size=window_size, overlap=overlap)
+                labels = np.zeros((windows.shape[0]))
+                if capgmyo_split == 'subjectwise':
+                    split_by = subject
+                else:
+                    split_by = session
+                if not data['gesture'] in [100, 101]:
+                    labels[:] = data['gesture'][0][0] - 1
+                    if split_by in train:
+                        train_data.append(windows)
+                        train_labels.append(labels)
+                    elif split_by in val:
+                        val_data.append(windows)
+                        val_labels.append(labels)
+                    elif split_by in test:
+                        test_data.append(windows)
+                        test_labels.append(labels)
 
     train_data, train_labels = torch.Tensor(np.concatenate(train_data)), torch.Tensor(np.concatenate(train_labels)).long()
     val_data, val_labels = torch.Tensor(np.concatenate(val_data)), torch.Tensor(np.concatenate(val_labels)).long()
