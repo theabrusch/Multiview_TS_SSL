@@ -25,7 +25,7 @@ def check_output_path(output_path):
 def main(args):
     args.train_mode = 'finetune'
     # always normalize epochs channelwise within each window
-    args.standardize_epochs = 'channelwise'
+   
     
     finetune_loader, finetune_val_loader, test_loader, dset, (channels, time_length, num_classes) = get_dataloaders_finetuning(args, balanced_sampling=args.balanced_sampling, sample_generator=args.sample_generator, seed = args.seed)
     orig_channels = channels
@@ -128,7 +128,7 @@ if __name__ == '__main__':
 
     # data arguments
     # path to config files. Remember to change paths in config files. 
-    parser.add_argument('--data_path', type = str, default = '/Users/theb/Desktop/data/grabgmyo/')
+    parser.add_argument('--data_path', type = str, default = '/Users/theb/Desktop/data/grabgmyob/')
     # whether or not to sample balanced during finetuning
     parser.add_argument('--balanced_sampling', type = eval, default = True)
     # number of samples to finetune on. Can be list for multiple runs
