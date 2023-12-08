@@ -43,7 +43,7 @@ def get_dataloaders_finetuning(args, balanced_sampling, sample_generator = None,
         train_dset, val_dset, test_dset, (channels, time_length, num_classes) = get_simulated_data_finetuning(dset, n_samples, standardize_channels=args.standardize_channels, seed = args.seed)
     elif 'grabgmyo' in args.data_path:
         dset = args.data_path.split('/')[-2]
-        train_dset, val_dset, test_dset, (channels, time_length, num_classes) = load_grapgmyo(args.data_path,  window_size = args.window_size, overlap = args.overlap, standardize_channels=args.standardize_channels, capgmyo_split='sessionwise', standardize_epochs = args.standardize_epochs)
+        train_dset, val_dset, test_dset, (channels, time_length, num_classes) = load_grapgmyo(args.data_path,  window_size = args.window_size, overlap = args.overlap, standardize_channels=args.standardize_channels, capgmyo_split='subjectwise', standardize_epochs = args.standardize_epochs)
     else:
         dset = args.data_path.split('/')[-2]
         train_dset, val_dset, test_dset, (channels, time_length, num_classes) = load_numpy_files(args.data_path, standardize_channels= args.standardize_channels)
