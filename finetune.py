@@ -96,7 +96,7 @@ def main(args):
                 None,
                 device,
                 test_loader = test_loader if args.track_test_performance else None,
-                early_stopping_criterion=args.early_stopping_criterion,
+                early_stopping_criterion=args.early_stopping_criterion if not args.early_stopping_criterion=='None' else None,
                 backup_path=ft_output_path,
                 log = args.log
         )
