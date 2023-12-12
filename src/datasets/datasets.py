@@ -7,6 +7,8 @@ from sklearn.model_selection import train_test_split
 from scipy.io import loadmat
 import os
 import glob
+from src.models.eeg_augmentations import EEG_augmentations
+from src.models.ecg_augmentations import ECG_augmentations
 
 def load_numpy_files(data_path, standardize_channels = True, combine_all = False, subsample = False):
     train = torch.load(data_path + 'train.pt')
@@ -43,7 +45,7 @@ def load_numpy_files(data_path, standardize_channels = True, combine_all = False
         test_dset = SSL_dataset(test['samples'], test['labels'], standardize_channels=standardize_channels)
     return train_dset, val_dset, test_dset, (channels, time_length, num_classes)
 
-def load_physionet(data_path, standardize_channels = True):
+def load_physionet(data_path, standardize_channels = True, pretraining_setup = 'cpc'):
     subsets = os.listdir(data_path)
     subsets = [subset for subset in subsets if not subset == '.DS_Store']
     train_data = []
@@ -61,8 +63,8 @@ def load_physionet(data_path, standardize_channels = True):
             if data['feats'].shape[1] == 5000:
                 val_data.append(torch.Tensor(data['feats']))
 
-    train_dset = SSL_dataset(train_data, torch.zeros(len(train_data)), standardize_channels=standardize_channels)
-    val_dset = SSL_dataset(val_data, torch.zeros(len(val_data)), standardize_channels=standardize_channels)
+    train_dset = SSL_dataset(train_data, torch.zeros(len(train_data)), standardize_channels=standardize_channels, pretraining_setup=pretraining_setup, datatype='ecg')
+    val_dset = SSL_dataset(val_data, torch.zeros(len(val_data)), standardize_channels=standardize_channels, pretraining_setup=pretraining_setup, datatype='ecg')
     channels = train_data[0].shape[0]
     time_length = train_data[0].shape[1]
     num_classes = 1
@@ -95,7 +97,7 @@ def load_grapgmyo(data_path,
         train, test = train_test_split(subjects, test_size=0.2, random_state=42)
         train, val = train_test_split(train, test_size=0.25, random_state=42)
     else:
-        train, val, test = ['001', '002', '003', '004'], ['005'], ['006', '007', '008', '009', '010']
+        train, val, test = ['001', '002', '003', '004', '005', '006', '007', '008'], ['009'], ['010']
 
     train_data, train_labels = [], []
     val_data, val_labels = [], []
@@ -250,11 +252,17 @@ def get_simulated_data_finetuning(finetune_setup,
     return train_dset, val_dset, test_dset, (channels, time_length, num_classes)
 
 class SSL_dataset(TensorDataset):
-    def __init__(self, X, y, standardize_channels = True, standardize_epochs = False):
+    def __init__(self, X, y, standardize_channels = True, standardize_epochs = False, pretraining_setup = 'cpc', datatype = 'eeg'):
         self.X = X
         self.y = y
         self.standardize_channels = standardize_channels
         self.standardize_epochs = standardize_epochs
+        self.pretraining_setup = pretraining_setup
+        if self.pretraining_setup == 'augment':
+            if datatype == 'eeg':
+                self.augmenter = EEG_augmentations()
+            elif datatype == 'ecg':
+                self.augmenter = ECG_augmentations()
 
     def __getitem__(self, index):
         x = self.X[index]
@@ -266,7 +274,10 @@ class SSL_dataset(TensorDataset):
             x = (x - x.mean(axis=1, keepdims=True)) / stds
         elif self.standardize_epochs:
             x = (x - x.mean()) / x.std()
-        
+        if self.pretraining_setup == 'augment':
+            x_1 = self.augmenter(x)
+            x_2 = self.augmenter(x)
+            x = torch.stack((x_1.unsqueeze(0), x_2.unsqueeze(0)), dim=0)
         return x, y
 
     def __len__(self):

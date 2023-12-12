@@ -5,7 +5,15 @@ from src.models.models import wave2vecblock
 import numpy as np
 from sklearn.metrics import balanced_accuracy_score, precision_recall_fscore_support, roc_auc_score
 from src.models.losses import COCOAloss, CMCloss
+from src.models.eeg_augmentations import EEG_augmentations
+from src.models.ecg_augmentations import ECG_augmentations
 import wandb
+from sklearn.exceptions import UndefinedMetricWarning
+def warn(*args, **kwargs):
+    pass
+import warnings
+warnings.warn = warn
+
 from copy import deepcopy
 
 class TimeClassifier(nn.Module):
@@ -161,7 +169,7 @@ class Multiview(nn.Module):
     
     def forward(self, x, classify = False):
         b, ch, ts = x.shape
-        x = x.view(b*ch, 1, ts)
+        x = x.reshape(b*ch, 1, ts)
         latents = self.wave2vec(x)
 
         if self.mpnn:
@@ -172,7 +180,7 @@ class Multiview(nn.Module):
         out = self.projector(latents)
 
         if not self.mpnn:
-            out = out.view(b, ch, *out.shape[1:])
+            out = out.reshape(b, ch, *out.shape[1:])
 
         if classify:
             return self.classifier(out)            
@@ -228,8 +236,7 @@ class Multiview(nn.Module):
             view_1 = x[:, :, :half]
             view_2 = x[:, :, half:] 
         elif self.pretraining_setup == 'augment':
-            view_1 = x
-            view_2 = x   
+            view_1 ,view_2 = x[:,0].squeeze(1), x[:,1].squeeze(1)
 
         if self.mpnn:
             out1 = self.forward(view_1)
@@ -246,8 +253,7 @@ class Multiview(nn.Module):
             return loss
         else:
             return loss, *[torch.tensor(0)]*2
-        
-
+    
 
 class AverageMPNN(nn.Module):
     def __init__(self):
@@ -305,7 +311,6 @@ class MPNN(nn.Module):
         #if self.per_channel:
         #    latents = latents.reshape(batch_size, ch, *latents.shape[1:])
         latents = latents.transpose(2,1)
-        put_idx = message_to.unsqueeze(-1).repeat(1,*latents.shape[1:])
         for message_net in self.message_nets:
             #if not self.per_channel:
             # divide by ch-1 to take mean
@@ -456,14 +461,19 @@ def finetune(model,
             early_stopping_criterion = None,
             backup_path = None,
             return_score = False,
+            return_loss = False,
             log = True ):
     model.to(device)
     loss = nn.CrossEntropyLoss(weight=weights)
     if early_stopping_criterion is not None:
         early_stopping = EarlyStopping(patience=7, verbose=True, path = f'{backup_path}/finetuned_model.pt')
+    train_loss_col = []
+    val_loss_col = []
     for epoch in range(epochs):
+        print(f'Epoch {epoch}')
         epoch_loss = 0
         model.train()
+        train_acc = 0
         for i, data in enumerate(dataloader):
             x = data[0].to(device).float()
             y = data[-1].to(device).long()
@@ -473,7 +483,10 @@ def finetune(model,
             loss_.backward()
             optimizer.step()
             epoch_loss += loss_.item()
+            train_acc += (out.argmax(dim=1) == y).sum().item()/y.shape[0]
+        train_acc = train_acc/(i+1)
         train_loss = epoch_loss/(i+1)
+        train_loss_col.append(train_loss)
         val_loss = 0
         collect_y = []
         collect_pred = []
@@ -491,6 +504,7 @@ def finetune(model,
         collect_y = np.concatenate(collect_y)
         collect_pred = np.concatenate(collect_pred)
         collect_logits = np.concatenate(collect_logits)
+        val_loss_col.append(val_loss/(i+1))
         
         acc = balanced_accuracy_score(collect_y, collect_pred)
         prec, rec, f, _ = precision_recall_fscore_support(collect_y, collect_pred)
@@ -502,6 +516,7 @@ def finetune(model,
             test_acc, test_prec, test_rec, test_f, test_auc = evaluate_classifier(model, test_loader, device)
             if log:
                 wandb.log({'train_class_loss': train_loss, 
+                           'train_accuracy': train_acc,
                             'val_class_loss': val_loss/(i+1), 
                             'val_acc': acc, 
                             'val_prec': np.mean(prec), 
@@ -541,6 +556,8 @@ def finetune(model,
 
     if return_score:
         return acc
+    elif return_loss:
+        return train_loss_col, val_loss_col
 
 def evaluate_classifier(model,
                         test_loader,

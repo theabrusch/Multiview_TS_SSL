@@ -6,6 +6,7 @@ import mne
 from dn3.configuratron import ExperimentConfig
 from dn3.data.dataset import EpochTorchRecording, Thinker, Dataset, DatasetInfo
 from dn3.transforms.instance import To1020, MappingDeep1010, TemporalInterpolation
+from src.models.eeg_augmentations import EEG_augmentations
 import numpy as np
 from scipy.signal import butter, sosfiltfilt
 from sklearn.model_selection import train_test_split
@@ -22,6 +23,7 @@ def construct_eeg_datasets(data_path,
                            train_mode = 'pretrain',
                            bendr_setup = False,
                            load_original_bendr = False,
+                           augmentations = False,
                            seqclr_setup = False,
                            upsample_bendr = False,
                            chunk_duration = '30',
@@ -44,7 +46,7 @@ def construct_eeg_datasets(data_path,
         bendr_setup = False
         standardize_epochs = False
     
-    if seqclr_setup:
+    if seqclr_setup or augmentations:
         config.tlen = int(chunk_duration) + 2
     
     pretrain_subjects = None
@@ -271,6 +273,8 @@ class EEG_dataset(TorchDataset):
         self.standardize_epochs = standardize_epochs
         self.bendr_setup = bendr_setup
         self.pretraining_setup = pretraining_setup
+        if self.pretraining_setup == 'augment':
+            self.augmentations = EEG_augmentations()
 
     def __len__(self):
         return len(self.dn3_dset)
@@ -300,6 +304,10 @@ class EEG_dataset(TorchDataset):
             sig[1,:] = signal[0,:]
             sig[-2,:] = signal[1,:]
             signal = sig
+        if self.pretraining_setup == 'augment':
+            signal_1 = self.augmentations(signal)
+            signal_2 = self.augmentations(signal)
+            signal = torch.stack([signal_1.unsqueeze(0), signal_2.unsqueeze(0)], dim = 0)
         
         return signal, label
     

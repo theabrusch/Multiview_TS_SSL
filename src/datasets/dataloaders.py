@@ -8,6 +8,8 @@ def get_dataloaders_pretraining(args, subsample=False):
     if 'sleep' in args.data_path:
         dset = args.data_path.split('.')[0]
         args.standardize_epochs = 'channelwise'
+        if args.pretraining_setup == 'augment':
+            args.augmentations = True
         train_dset, val_dset, (channels, time_length, num_classes) = construct_eeg_datasets(**vars(args))
     elif 'simulated' in args.data_path:
         dset = args.data_path
@@ -18,7 +20,7 @@ def get_dataloaders_pretraining(args, subsample=False):
         train_dset, val_dset, (channels, time_length, num_classes) = load_ninaprodb2(args.data_path, standardize_channels=args.standardize_channels)
     elif 'physionet2021' in args.data_path:
         dset = args.data_path.split('/')[-2]
-        train_dset, val_dset, (channels, time_length, num_classes) = load_physionet(args.data_path, standardize_channels= args.standardize_channels)
+        train_dset, val_dset, (channels, time_length, num_classes) = load_physionet(args.data_path, standardize_channels= args.standardize_channels, pretraining_setup=args.pretraining_setup)
     else:
         dset = args.data_path.split('/')[-2]
         # uniform method for loading ecg datasets
