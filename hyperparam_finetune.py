@@ -51,9 +51,10 @@ def main(args):
     # load model args from pretrained model
     results = {}
     for ft_loader, ft_val_loader in zip(finetune_loader, finetune_val_loader):
-        train_samples = len(ft_loader.dataset)
-        val_samples = len(ft_val_loader.dataset)
+        train_samples = len(ft_loader.sampler)
+        val_samples = len(ft_val_loader.sampler)
         results[train_samples] = {
+            'val_samples': val_samples,
             'postfix': [],
             'learning_rate': [],
             'accuracy': [],
@@ -183,7 +184,7 @@ if __name__ == '__main__':
     # whether or not to sample balanced during finetuning
     parser.add_argument('--balanced_sampling', type = eval, default = True)
     # number of samples to finetune on. Can be list for multiple runs
-    parser.add_argument('--sample_generator', type = eval, nargs = '+', default = [10, 20])
+    parser.add_argument('--sample_generator', type = eval, nargs = '+', default = [10, 20, None])
 
     # model arguments
     parser.add_argument('--remove_mpnn', type = eval, default = False)

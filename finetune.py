@@ -59,8 +59,8 @@ def main(args):
     for ft_loader, ft_val_loader in zip(finetune_loader, finetune_val_loader):
         if args.log:
             wandb.init(project = 'MultiView_new', group = group, config = args)
-        train_samples = len(ft_loader.dataset)
-        val_samples = len(ft_val_loader.dataset)
+        train_samples = len(ft_loader.sampler)
+        val_samples = len(ft_val_loader.sampler)
         if args.log:
             wandb.config.update({'Finetune samples': train_samples, 'Finetune validation samples': val_samples, 'Test samples': len(test_loader.dataset)})
         # make sure to save outputs in a new folder
