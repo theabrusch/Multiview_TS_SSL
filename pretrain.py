@@ -74,7 +74,7 @@ if __name__ == '__main__':
     # whether or not to save finetuned models
     parser.add_argument('--load_model', type = eval, default = False)
     parser.add_argument('--model_setup', type = str, default = 'MPNN', choices = ['MPNN', 'nonMPNN', 'average'])
-    parser.add_argument('--pretraining_setup', type = str, default = 'multiview', choices = ['multiview', 'cpc'])
+    parser.add_argument('--pretraining_setup', type = str, default = 'augment', choices = ['multiview', 'cpc', 'augment'])
     parser.add_argument('--model_postfix', type = str, default = '')
     parser.add_argument('--seed', type = int, default = 42)
 
@@ -87,7 +87,7 @@ if __name__ == '__main__':
     parser.add_argument('--random_settings', type = eval, default = True)
     parser.add_argument('--random_emission_matrix', type = eval, default = True)
     parser.add_argument('--standardize_channels', type = eval, default = True)
-    parser.add_argument('--chunk_duration', type = str, default = '60')
+    parser.add_argument('--chunk_duration', type = str, default = '30')
 
     # model arguments
     parser.add_argument('--nlayers', type = int, default = 6)
