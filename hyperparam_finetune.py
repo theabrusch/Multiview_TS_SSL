@@ -49,7 +49,12 @@ def main(args):
     args.output_path = output_path
     print('Saving outputs in', output_path)
     # load model args from pretrained model
-    results = {}
+    if not args.update_results:
+        results = {}
+    else:
+        res_path = f'outputs/{args.pretraining_dset}_{args.pretraining_setup}_{args.loss}{args.model_postfix}_{dset}_{args.seed}_results.pkl'
+        with open(res_path, 'rb') as f:
+            results = pickle.load(f)
     for ft_loader, ft_val_loader in zip(finetune_loader, finetune_val_loader):
         train_samples = len(ft_loader.sampler)
         val_samples = len(ft_val_loader.sampler)
@@ -154,7 +159,7 @@ def main(args):
             # delete ft_output_path folder to save memory
             shutil.rmtree(output_path)
         # save results file
-        res_path = f'outputs/{args.pretraining_dset}_{args.pretraining_setup}_{args.loss}{args.model_postfix}_{dset}_{args.seed}_results.pkl'
+        res_path = f'outputs/{model_args.model_setup}_{args.pretraining_dset}_{args.pretraining_setup}_{args.loss}{args.model_postfix}_{dset}_{args.seed}_results.pkl'
         with open(res_path, 'wb') as f:
             pickle.dump(results, f)
         if args.log:
@@ -171,6 +176,7 @@ if __name__ == '__main__':
     parser.add_argument('--load_model', type = eval, default = False)
     parser.add_argument('--optimize_encoder', type = eval, default = False)
     parser.add_argument('--optimize_mpnn', type = eval, default = False)
+    parser.add_argument('--update_results', type = eval, default = False)
     parser.add_argument('--pretraining_dset', type = str, default = 'HAR')
     parser.add_argument('--pretraining_setup', type = str, default = 'multiview', choices = ['multiview', 'cpc', 'augment'])
     parser.add_argument('--model_setup', type = str, default = 'MPNN', choices = ['MPNN', 'nonMPNN', 'average'])
