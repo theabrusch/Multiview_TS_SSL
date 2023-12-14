@@ -93,14 +93,14 @@ if __name__ == '__main__':
     parser.add_argument('--nlayers', type = int, default = 6)
     # early stopping criterion during finetuning. Can be loss or accuracy (on validation set)
     parser.add_argument('--conv_do', type = float, default = 0.1)
-    parser.add_argument('--pool', type = str, default = 'flatten', choices = ['adapt_avg', 'flatten'])
+    parser.add_argument('--pool', type = str, default = 'adapt_avg', choices = ['adapt_avg', 'flatten'])
     parser.add_argument('--feat_do', type = float, default = 0.1)
     parser.add_argument('--num_message_passing_rounds', type = int, default = 3)
     parser.add_argument('--hidden_channels', type = int, default = 256)
     parser.add_argument('--out_dim', type = int, default = 64)
     parser.add_argument('--embedding_dim', type = int, default = 32)
     parser.add_argument('--width', type = int, default = 3) # kernel width
-
+    parser.add_argument('--projection_head', type = eval, default = True)
 
     # eeg arguments
     # subsample number of subjects. If set to False, use all subjects, else set to integer
