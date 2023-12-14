@@ -172,7 +172,7 @@ if __name__ == '__main__':
     parser.add_argument('--optimize_encoder', type = eval, default = False)
     parser.add_argument('--optimize_mpnn', type = eval, default = False)
     parser.add_argument('--pretraining_dset', type = str, default = 'HAR')
-    parser.add_argument('--pretraining_setup', type = str, default = 'multiview', choices = ['multiview', 'cpc'])
+    parser.add_argument('--pretraining_setup', type = str, default = 'multiview', choices = ['multiview', 'cpc', 'augment'])
     parser.add_argument('--model_setup', type = str, default = 'MPNN', choices = ['MPNN', 'nonMPNN', 'average'])
     parser.add_argument('--model_postfix', type = str, nargs = '+', default = [''])
 
