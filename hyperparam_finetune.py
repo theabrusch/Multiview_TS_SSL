@@ -42,6 +42,7 @@ def main(args):
         with open(model_arg_path, 'rb') as f:
             model_args = pickle.load(f) 
         res_path = f'outputs/{model_args.model_setup}_{args.pretraining_dset}_{args.pretraining_setup}_{args.loss}_ft_{dset}/'
+        pretrained_model_path = pretrained_model_path + '/pretrained_model.pt'
     else:
         output_path = f'finetuned_models/{args.model_setup}_scratch'
         group = f'{dset}_{args.model_setup}_scratch' #wandb group
@@ -87,9 +88,7 @@ def main(args):
             # load model
             model = load_model(device, model_args, return_loss=False)
             model.remove_projector()
-            pretrained_model_path = f'pretrained_models/{args.pretraining_dset}_{args.model_setup}_{args.pretraining_setup}_{args.loss}{args.model_postfix}'
             if args.load_model:
-                pretrained_model_path = pretrained_model_path + '/pretrained_model.pt'
                 model.load_weights(pretrained_model_path, device)
             
             # update model parameters for finetuning
