@@ -103,7 +103,7 @@ class Wave2Vec(nn.Module):
                  ):
         super().__init__()
         self.channels = channels
-        width = [3]*nlayers
+        width = [3] + [2]*(nlayers-1)
         if stride == 'width':
             stride = width
         else:
