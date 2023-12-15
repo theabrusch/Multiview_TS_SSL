@@ -23,7 +23,6 @@ class TimeClassifier(nn.Module):
         self.flatten = nn.Flatten()
         self.adpat_avg = nn.AdaptiveAvgPool1d(4)
         
-        self.channelreduction = nn.Linear(in_features=orig_channels, out_features=1)
         if self.pool == 'adapt_avg':
             in_features = 4*in_features
         elif self.pool == 'flatten':
@@ -39,10 +38,6 @@ class TimeClassifier(nn.Module):
             )
 
     def forward(self, latents):
-        if len(latents.shape) > 3:
-            latents = latents.permute(0,2,3,1)
-            latents = self.channelreduction(latents).squeeze(-1)
-
         ts_length = latents.shape[2]
         if self.pool == 'max':
             latents = F.max_pool1d(latents, ts_length).squeeze(-1)
@@ -178,9 +173,6 @@ class Multiview(nn.Module):
             latents = out_mpnn.permute(0,2,1)
 
         out = self.projector(latents)
-
-        if not self.mpnn:
-            out = out.reshape(b, ch, *out.shape[1:])
 
         if classify:
             return self.classifier(out)            

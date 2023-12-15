@@ -92,9 +92,10 @@ def main(args):
                 model.load_weights(pretrained_model_path, device)
             
             # update model parameters for finetuning
-            if args.remove_mpnn: # remove the message passing network
+            if args.remove_mpnn or channels == 1: # remove the message passing network
                 model.mpnn = False
                 args.optimize_mpnn = False
+            
             if args.optimize_encoder:
                 args.optimize_mpnn = True
             # update the classifier to the number of classes in the finetuning dataset
@@ -209,7 +210,7 @@ if __name__ == '__main__':
     parser.add_argument('--sample_finetune_train_subjects', type = eval, default = 2)
     parser.add_argument('--sample_finetune_val_subjects', type = eval, default = 2)
     parser.add_argument('--sample_test_subjects', type = eval, default = 2)
-    parser.add_argument('--leads', type = str, nargs = '+', default = ['I', 'II', 'V2'])
+    parser.add_argument('--leads', type = str, nargs = '+', default = ['I'])
 
     # optimizer arguments
     parser.add_argument('--loss', type = str, default = 'time_loss', choices = ['time_loss', 'contrastive', 'COCOA'])
