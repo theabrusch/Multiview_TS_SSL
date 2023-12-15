@@ -126,15 +126,13 @@ def main(args):
             results[train_samples]['learning_rate'].append(learning_rate)
             results[train_samples]['accuracy'].append(val_acc)
         best_model = np.argmax(results[train_samples]['accuracy'])
-        best_postfix = results[train_samples]['postfix'][best_model]
         best_learning_rate = results[train_samples]['learning_rate'][best_model]
-        results[train_samples]['best_postfix'] = best_postfix
         results[train_samples]['best_learning_rate'] = best_learning_rate
         results[train_samples]['best_val_acc'] = results[train_samples]['accuracy'][best_model]
-        print(f'Best model for {train_samples} samples: {best_postfix} with learning rate {best_learning_rate}')
+        print(f'Best model for {train_samples} samples: learning rate {best_learning_rate}')
 
         # load model with best postfix
-        best_model_path = output_path + f'/{train_samples}_samples/{learning_rate}'
+        best_model_path = output_path + f'/{train_samples}_samples/{best_learning_rate}'
         model_arg_path = best_model_path + '/args.pkl'
         with open(model_arg_path, 'rb') as f:
             model_args = pickle.load(f)
