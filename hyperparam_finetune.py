@@ -49,10 +49,13 @@ def main(args):
     args.output_path = output_path
     print('Saving outputs in', output_path)
     # load model args from pretrained model
+    res_path = f'outputs/{model_args.model_setup}_{args.pretraining_dset}_{args.pretraining_setup}_{args.loss}/'
+    if not os.path.exists(res_path):
+        os.makedirs(res_path)
+    res_path = res_path + f'{dset}_optenc_{args.optimize_encoder}_loadmodel_{args.load_model}_{args.seed}_results.pkl'
     if not args.update_results:
         results = {}
     else:
-        res_path = f'outputs/{args.pretraining_dset}_{args.pretraining_setup}_{args.loss}{args.model_postfix}_{dset}_{args.seed}_results.pkl'
         with open(res_path, 'rb') as f:
             results = pickle.load(f)
     for ft_loader, ft_val_loader in zip(finetune_loader, finetune_val_loader):
@@ -159,7 +162,6 @@ def main(args):
             # delete ft_output_path folder to save memory
             shutil.rmtree(output_path)
         # save results file
-        res_path = f'outputs/{model_args.model_setup}_{args.pretraining_dset}_{args.pretraining_setup}_{args.loss}{args.model_postfix}_{dset}_{args.seed}_results.pkl'
         with open(res_path, 'wb') as f:
             pickle.dump(results, f)
         if args.log:
@@ -211,6 +213,7 @@ if __name__ == '__main__':
     parser.add_argument('--sample_finetune_train_subjects', type = eval, default = 2)
     parser.add_argument('--sample_finetune_val_subjects', type = eval, default = 2)
     parser.add_argument('--sample_test_subjects', type = eval, default = 2)
+    parser.add_argument('--leads', type = str, nargs = '+', default = ['all'])
 
     # optimizer arguments
     parser.add_argument('--loss', type = str, default = 'contrastive', choices = ['time_loss', 'contrastive', 'COCOA'])
