@@ -171,7 +171,7 @@ if __name__ == '__main__':
     parser.add_argument('--log', type = eval, default = False) # whether or not to log to wandb
     # whether or not to save finetuned models<<
     parser.add_argument('--save_model', type = eval, default = False)
-    parser.add_argument('--load_model', type = eval, default = True)
+    parser.add_argument('--load_model', type = eval, default = False)
     parser.add_argument('--optimize_encoder', type = eval, default = False)
     parser.add_argument('--optimize_mpnn', type = eval, default = False)
     parser.add_argument('--update_results', type = eval, default = False)
@@ -184,7 +184,7 @@ if __name__ == '__main__':
 
     # data arguments
     # path to config files. Remember to change paths in config files. 
-    parser.add_argument('--data_path', type = str, default = 'sleepedf_local.yml')
+    parser.add_argument('--data_path', type = str, default = '/Users/theb/Desktop/data/chapman/chapman_processed/')
     # whether or not to sample balanced during finetuning
     parser.add_argument('--balanced_sampling', type = eval, default = True)
     # number of samples to finetune on. Can be list for multiple runs
@@ -192,7 +192,7 @@ if __name__ == '__main__':
 
     # model arguments
     parser.add_argument('--remove_mpnn', type = eval, default = False)
-    parser.add_argument('--nlayers', type = int, default = 3)
+    parser.add_argument('--nlayers', type = int, default = 6)
     # early stopping criterion during finetuning. Can be loss or accuracy (on validation set)
     parser.add_argument('--early_stopping_criterion', type = str, default = None, choices = [None, 'loss', 'acc'])
     parser.add_argument('--pool', type = str, default = 'adapt_avg', choices = ['adapt_avg', 'flatten'])
@@ -209,7 +209,7 @@ if __name__ == '__main__':
     parser.add_argument('--sample_finetune_train_subjects', type = eval, default = 2)
     parser.add_argument('--sample_finetune_val_subjects', type = eval, default = 2)
     parser.add_argument('--sample_test_subjects', type = eval, default = 2)
-    parser.add_argument('--leads', type = str, nargs = '+', default = ['all'])
+    parser.add_argument('--leads', type = str, nargs = '+', default = ['I', 'II', 'V2'])
 
     # optimizer arguments
     parser.add_argument('--loss', type = str, default = 'time_loss', choices = ['time_loss', 'contrastive', 'COCOA'])

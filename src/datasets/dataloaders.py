@@ -48,7 +48,7 @@ def get_dataloaders_finetuning(args, balanced_sampling, sample_generator = None,
         train_dset, val_dset, test_dset, (channels, time_length, num_classes) = load_grapgmyo(args.data_path,  window_size = args.window_size, overlap = args.overlap, standardize_channels=args.standardize_channels, capgmyo_split='subjectwise', standardize_epochs = args.standardize_epochs)
     else:
         dset = args.data_path.split('/')[-2]
-        train_dset, val_dset, test_dset, (channels, time_length, num_classes) = load_numpy_files(args.data_path, standardize_channels= args.standardize_channels)
+        train_dset, val_dset, test_dset, (channels, time_length, num_classes) = load_numpy_files(args.data_path, leads = args.leads)
         
     if balanced_sampling:
         sample_weights_train, length_train, sample_weights_val, length_val = get_label_balance(train_dset, val_dset, sample_generator = sample_generator, seed = seed)

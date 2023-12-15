@@ -10,7 +10,20 @@ import glob
 from src.models.eeg_augmentations import EEG_augmentations
 from src.models.ecg_augmentations import ECG_augmentations
 
-def load_numpy_files(data_path, standardize_channels = True, combine_all = False, subsample = False):
+def get_lead_index(lead) -> int:
+    if isinstance(lead, int):
+        return lead
+    lead = lead.lower()
+    order = ['i', 'ii', 'iii', 'avr', 'avl', 'avf', 'v1', 'v2', 'v3', 'v4', 'v5', 'v6']
+    try:
+        index = order.index(lead)
+    except ValueError:
+        raise ValueError(
+            "Please make sure that the lead indicator is correct"
+        )
+    return index
+
+def load_numpy_files(data_path, standardize_channels = True, combine_all = False, subsample = False, leads = 'all'):
     train = torch.load(data_path + 'train.pt')
     val = torch.load(data_path + 'val.pt')
     if 'ptbxl' in data_path:
@@ -25,6 +38,13 @@ def load_numpy_files(data_path, standardize_channels = True, combine_all = False
     else:
         test = None
         test_dset = None
+    if 'chapman' in data_path:
+        if not leads[0] == 'all':
+            leads_to_load = list(map(get_lead_index, leads))
+            train['samples'] = train['samples'][:, leads_to_load, :]
+            val['samples'] = val['samples'][:, leads_to_load, :]
+            if test is not None:
+                test['samples'] = test['samples'][:, leads_to_load, :]
 
     channels = train['samples'].shape[1]
     time_length = train['samples'].shape[2]
