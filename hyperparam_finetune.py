@@ -54,7 +54,7 @@ def main(args):
 
     if not os.path.exists(res_path):
         os.makedirs(res_path)
-        
+
     output_path = check_output_path(output_path)
     args.output_path = output_path
     print('Saving outputs in', output_path)
@@ -87,6 +87,7 @@ def main(args):
             # load model
             model = load_model(device, model_args, return_loss=False)
             model.remove_projector()
+            pretrained_model_path = f'pretrained_models/{args.pretraining_dset}_{args.model_setup}_{args.pretraining_setup}_{args.loss}{args.model_postfix}'
             if args.load_model:
                 pretrained_model_path = pretrained_model_path + '/pretrained_model.pt'
                 model.load_weights(pretrained_model_path, device)
