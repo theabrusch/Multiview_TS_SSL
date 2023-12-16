@@ -41,7 +41,7 @@ def main(args):
         model_arg_path = pretrained_model_path + '/args.pkl'
         with open(model_arg_path, 'rb') as f:
             model_args = pickle.load(f) 
-        res_path = f'outputs/{model_args.model_setup}_{args.pretraining_dset}_{args.pretraining_setup}_{args.loss}_ft_{dset}/'
+        res_path = f'outputs/{model_args.model_setup}_{args.pretraining_dset}_{args.pretraining_setup}_{args.loss}_{args.model_postfix}_ft_{dset}/'
         pretrained_model_path = pretrained_model_path + '/pretrained_model.pt'
     else:
         output_path = f'finetuned_models/{args.model_setup}_scratch'
