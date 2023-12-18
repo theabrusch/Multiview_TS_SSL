@@ -75,6 +75,11 @@ def main(args):
             'postfix': [],
             'learning_rate': [],
             'accuracy': [],
+            'test_accuracy': [],
+            'test_precision': [],
+            'test_recall': [],
+            'test_f1': [],
+            'test_auc': [],
         }
         for learning_rate in args.ft_learning_rate:
             group += f'{learning_rate}'
@@ -126,34 +131,18 @@ def main(args):
                 pickle.dump(model_args, f)
             results[train_samples]['learning_rate'].append(learning_rate)
             results[train_samples]['accuracy'].append(val_acc)
+            # test score
+            accuracy, prec, rec, f, auc = evaluate_classifier(model, test_loader, device)
+            results[train_samples]['test_accuracy'].append(accuracy)
+            results[train_samples]['test_precision'].append(prec)
+            results[train_samples]['test_recall'].append(rec)
+            results[train_samples]['test_f1'].append(f)
+            results[train_samples]['test_auc'].append(auc)
         best_model = np.argmax(results[train_samples]['accuracy'])
         best_learning_rate = results[train_samples]['learning_rate'][best_model]
         results[train_samples]['best_learning_rate'] = best_learning_rate
         results[train_samples]['best_val_acc'] = results[train_samples]['accuracy'][best_model]
         print(f'Best model for {train_samples} samples: learning rate {best_learning_rate}')
-
-        # load model with best postfix
-        best_model_path = output_path + f'/{train_samples}_samples/{best_learning_rate}'
-        model_arg_path = best_model_path + '/args.pkl'
-        with open(model_arg_path, 'rb') as f:
-            model_args = pickle.load(f)
-        model = load_model(device, model_args, return_loss=False)
-        model.remove_projector()
-        if args.remove_mpnn: # remove the message passing network
-            model.mpnn = False
-            args.optimize_mpnn = False
-        # update the classifier to the number of classes in the finetuning dataset
-        model.update_classifier(num_classes, orig_channels=orig_channels, pool = args.pool, seed = args.seed)
-        model.load_state_dict(torch.load(best_model_path + '/finetuned_model.pt', map_location=device))
-        model.to(device)
-
-
-        accuracy, prec, rec, f, auc = evaluate_classifier(model, test_loader, device)
-        results[train_samples]['test_accuracy'] = accuracy
-        results[train_samples]['test_precision'] = prec
-        results[train_samples]['test_recall'] = rec
-        results[train_samples]['test_f1'] = f
-        results[train_samples]['test_auc'] = auc
 
         if not args.save_model:
             # delete ft_output_path folder to save memory
