@@ -60,8 +60,10 @@ def main(args):
     args.output_path = output_path
     print('Saving outputs in', output_path)
     # load model args from pretrained model
-    
-    res_path = res_path + f'optenc_{args.optimize_encoder}_{args.seed}_results.pkl'
+    if 'chapman' in args.data_path:
+        res_path = res_path + f'leads_{args.leads}_optenc_{args.optimize_encoder}_{args.seed}_results.pkl'
+    else:
+        res_path = res_path + f'optenc_{args.optimize_encoder}_{args.seed}_results.pkl'
     if not args.update_results:
         results = {}
     else:
@@ -199,7 +201,7 @@ if __name__ == '__main__':
     parser.add_argument('--sample_finetune_train_subjects', type = eval, default = 2)
     parser.add_argument('--sample_finetune_val_subjects', type = eval, default = 2)
     parser.add_argument('--sample_test_subjects', type = eval, default = 2)
-    parser.add_argument('--leads', type = str, nargs = '+', default = ['I'])
+    parser.add_argument('--leads', type = str, nargs = '+', default = ['I', 'II'])
 
     # optimizer arguments
     parser.add_argument('--loss', type = str, default = 'time_loss', choices = ['time_loss', 'contrastive', 'COCOA'])
