@@ -181,7 +181,7 @@ class Multiview(nn.Module):
     def load_weights(self, path, device):
         weights = torch.load(path, map_location = device)
         # filter out projector weights
-        weights = {k:v for k,v in weights.items() if not 'projector' in k}
+        weights = {k:v for k,v in weights.items() if not 'projector' in k and not 'channelreduction' in k}
         self.load_state_dict(weights)
         
 
