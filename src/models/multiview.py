@@ -418,7 +418,9 @@ class EarlyStopping:
         self.delta = delta
         self.path = path
         self.trace_func = trace_func
-    def __call__(self, val_loss, model):
+        self.best_extra_score = None
+        
+    def __call__(self, val_loss, model, extra_score = None):
 
         score = -val_loss
 
@@ -432,15 +434,16 @@ class EarlyStopping:
                 self.early_stop = True
         else:
             self.best_score = score
-            self.save_checkpoint(val_loss, model)
+            self.save_checkpoint(val_loss, model, extra_score=extra_score)
             self.counter = 0
 
-    def save_checkpoint(self, val_loss, model):
+    def save_checkpoint(self, val_loss, model, extra_score = None):
         '''Saves model when validation loss decrease.'''
         if self.verbose:
             self.trace_func(f'Validation loss decreased ({self.val_loss_min:.6f} --> {val_loss:.6f}).  Saving model ...')
         torch.save(model.state_dict(), self.path)
         self.val_loss_min = val_loss
+        self.best_extra_score = extra_score
 
 def finetune(model,
             dataloader,
@@ -532,7 +535,7 @@ def finetune(model,
                             })
         if early_stopping_criterion is not None:
             if early_stopping_criterion == 'loss':
-                early_stopping(val_loss/(i+1), model)
+                early_stopping(val_loss/(i+1), model, extra_score = acc)
             elif early_stopping_criterion == 'acc':
                 early_stopping(-acc, model)
             if early_stopping.early_stop:
@@ -544,7 +547,10 @@ def finetune(model,
     if early_stopping_criterion is not None:
         # load best model
         model.load_state_dict(torch.load(f'{backup_path}/finetuned_model.pt'))
-        acc = early_stopping.best_score
+        if early_stopping_criterion == 'loss':
+            acc = early_stopping.best_extra_score
+        elif early_stopping_criterion == 'acc':
+            acc = early_stopping.best_score
 
     if return_score:
         return acc
