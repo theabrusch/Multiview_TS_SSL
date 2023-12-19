@@ -69,6 +69,8 @@ def main(args):
     else:
         with open(res_path, 'rb') as f:
             results = pickle.load(f)
+
+    print('Finetuning model from with optimize encoder', args.optimize_encoder, 'and optimize mpnn', args.optimize_mpnn)
     for ft_loader, ft_val_loader in zip(finetune_loader, finetune_val_loader):
         train_samples = len(ft_loader.sampler)
         val_samples = len(ft_val_loader.sampler)
@@ -186,7 +188,7 @@ if __name__ == '__main__':
     parser.add_argument('--remove_mpnn', type = eval, default = False)
     parser.add_argument('--nlayers', type = int, default = 6)
     # early stopping criterion during finetuning. Can be loss or accuracy (on validation set)
-    parser.add_argument('--early_stopping_criterion', type = str, default = None, choices = [None, 'loss', 'acc'])
+    parser.add_argument('--early_stopping_criterion', type = str, default = 'loss', choices = [None, 'loss', 'acc'])
     parser.add_argument('--pool', type = str, default = 'adapt_avg', choices = ['adapt_avg', 'flatten'])
     parser.add_argument('--conv_do', type = float, default = 0.1)
     parser.add_argument('--feat_do', type = float, default = 0.1)
