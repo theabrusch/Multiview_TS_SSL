@@ -43,6 +43,7 @@ def main(args):
             model_args = pickle.load(f) 
         res_path = f'outputs/{model_args.model_setup}_{args.pretraining_dset}_{args.pretraining_setup}_{args.loss}_{args.model_postfix}_ft_{dset}/'
         pretrained_model_path = pretrained_model_path + '/pretrained_model.pt'
+        print('Loading model from pretrained weights')
     else:
         output_path = f'finetuned_models/{args.model_setup}_scratch'
         group = f'{dset}_{args.model_setup}_scratch' #wandb group
@@ -52,6 +53,7 @@ def main(args):
         model_args.time_length = time_length
         model_args.num_classes = num_classes
         res_path = f'outputs/{model_args.model_setup}_scratch_ft_{dset}/'
+        print('Training model from scratch')
 
     if not os.path.exists(res_path):
         os.makedirs(res_path)
@@ -106,6 +108,7 @@ def main(args):
                 args.optimize_mpnn = False
             
             if args.optimize_encoder:
+                print('Optimizing encoder')
                 args.optimize_mpnn = True
             # update the classifier to the number of classes in the finetuning dataset
             model.update_classifier(num_classes, orig_channels=orig_channels, pool = args.pool, seed = args.seed)
