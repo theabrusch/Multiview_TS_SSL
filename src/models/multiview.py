@@ -418,15 +418,15 @@ class EarlyStopping:
         self.delta = delta
         self.path = path
         self.trace_func = trace_func
-        self.best_extra_score = None
-        
+        self.best_extra_score = -np.Inf
+
     def __call__(self, val_loss, model, extra_score = None):
 
         score = -val_loss
 
         if self.best_score is None:
             self.best_score = score
-            self.save_checkpoint(val_loss, model)
+            self.save_checkpoint(val_loss, model, extra_score=extra_score)
         elif score < self.best_score + self.delta:
             self.counter += 1
             self.trace_func(f'EarlyStopping counter: {self.counter} out of {self.patience}')
