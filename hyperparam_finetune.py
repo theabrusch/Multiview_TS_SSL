@@ -30,7 +30,8 @@ def main(args):
     finetune_loader, finetune_val_loader, test_loader, dset, (channels, time_length, num_classes) = get_dataloaders_finetuning(args, balanced_sampling=args.balanced_sampling, sample_generator=args.sample_generator, seed = args.seed)
     orig_channels = channels
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    
+    if args.load_model == 'False':
+        args.load_model = False
 
     if args.load_model:
         pretrained_model_path = f'pretrained_models/{args.pretraining_dset}_{args.model_setup}_{args.pretraining_setup}_{args.loss}'
@@ -110,6 +111,8 @@ def main(args):
             if args.optimize_encoder:
                 print('Optimizing encoder')
                 args.optimize_mpnn = True
+            else:
+                print('Freezing encoder')
             # update the classifier to the number of classes in the finetuning dataset
             model.update_classifier(num_classes, orig_channels=orig_channels, pool = args.pool, seed = args.seed)
             # freeze parameters
