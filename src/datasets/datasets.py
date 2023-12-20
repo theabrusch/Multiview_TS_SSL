@@ -39,7 +39,7 @@ def load_numpy_files(data_path, standardize_channels = True, combine_all = False
         test = None
         test_dset = None
     if 'chapman' in data_path:
-        if not leads[0] == 'all':
+        if not leads[0] == 'all' and not leads == 'all':
             leads_to_load = list(map(get_lead_index, leads))
             train['samples'] = train['samples'][:, leads_to_load, :]
             val['samples'] = val['samples'][:, leads_to_load, :]
@@ -64,6 +64,7 @@ def load_numpy_files(data_path, standardize_channels = True, combine_all = False
     if test is not None:
         test_dset = SSL_dataset(test['samples'], test['labels'], standardize_channels=standardize_channels)
     return train_dset, val_dset, test_dset, (channels, time_length, num_classes)
+
 
 def load_physionet(data_path, standardize_channels = True, pretraining_setup = 'cpc'):
     subsets = os.listdir(data_path)
@@ -167,13 +168,19 @@ def load_grapgmyo(data_path,
     num_classes = len(torch.unique(train_labels))
     return train_dset, val_dset, test_dset, (channels, time_length, num_classes)
 
-def load_ninaprodb2(data_path, standardize_channels = True):
+def load_ninaprodb2(data_path, standardize_channels = True, get_test_data = False):
     path = data_path 
     files = os.listdir(path)
     subjects = np.unique([file.split('_')[0] for file in files])
-    train, val = train_test_split(subjects, test_size=0.2, random_state=42)
+    if get_test_data:
+        train, test = train_test_split(subjects, test_size=0.2, random_state=42)
+        train, val = train_test_split(train, test_size=0.25, random_state=42)
+    else:
+        train, val = train_test_split(subjects, test_size=0.2, random_state=42)
+        test = []
     train_data, train_labels = [], []
     val_data, val_labels = [], []
+    test_data, test_labels = [], []
     for file in files:
         subject = file.split('_')[0]
         data = np.load(path + file)
@@ -183,14 +190,23 @@ def load_ninaprodb2(data_path, standardize_channels = True):
         elif subject in val:
             val_data.append(data['windows'])
             val_labels.append(data['labels'])
+        elif subject in test:
+            test_data.append(data['windows'])
+            test_labels.append(data['labels'])
     train_data, train_labels = torch.Tensor(np.concatenate(train_data)).transpose(1,2), torch.Tensor(np.concatenate(train_labels)).long()
     val_data, val_labels = torch.Tensor(np.concatenate(val_data)).transpose(1,2), torch.Tensor(np.concatenate(val_labels)).long()
     train_dset = SSL_dataset(train_data, train_labels, standardize_channels=standardize_channels)
     val_dset = SSL_dataset(val_data, val_labels, standardize_channels=standardize_channels)
+    if get_test_data:
+        test_data, test_labels = torch.Tensor(np.concatenate(test_data)).transpose(1,2), torch.Tensor(np.concatenate(test_labels)).long()
+        test_dset = SSL_dataset(test_data, test_labels, standardize_channels=standardize_channels)
     channels = train_data.shape[1]
     time_length = train_data.shape[2]
     num_classes = len(torch.unique(train_labels))
-    return train_dset, val_dset, (channels, time_length, num_classes)
+    if get_test_data:
+        return train_dset, val_dset, test_dset, (channels, time_length, num_classes)
+    else:
+        return train_dset, val_dset, (channels, time_length, num_classes)
 
 
 def get_simulated_data_pretraining(simulator_type, 
