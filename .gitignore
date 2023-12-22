@@ -4,3 +4,6 @@
 wandb/*
 pretrained_models/*
 physionet.org
+outputs
+finetuned_models/*
+src/analysis/*

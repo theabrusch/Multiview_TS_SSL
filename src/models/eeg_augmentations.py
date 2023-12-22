@@ -135,7 +135,7 @@ class GaussianNoise(object):
         new_sample = sample.clone()
         if self.p > np.random.uniform(0,1):
             padding = int((new_sample.shape[1]-self.window_length)/2)
-            sigma = np.random.uniform(0, self.max_sigma)
+            sigma = np.random.uniform(0.01, self.max_sigma)
             new_sample = new_sample[:,padding:padding+self.window_length] + np.random.normal(0, sigma, size = (new_sample.shape[0], self.window_length))
         return new_sample.float()
 
