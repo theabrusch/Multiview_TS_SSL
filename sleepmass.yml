@@ -1,0 +1,45 @@
+Configuratron:
+  preload: True
+
+use_gpu: False
+deep1010: False
+
+datasets:
+  mass:
+    name: "mass"
+    toplevel: '/work3/theb/timeseries/mass/' #UPDATE
+    events: {'Sleep stage W': 0, 'Sleep stage 1': 1, 'Sleep stage 2': 2, 'Sleep stage 3': 3, 'Sleep stage 4': 3, 'Sleep stage R': 4}
+    tmin: 0
+    tlen: 30
+    test_size: 0.2
+    val_size: 0.2
+    chunk_duration: '30'
+    exclude_channels: ['STI']
+    preload: True
+    picks: ['EEG Fp1-LER', 'EEG Fp2-LER', 'EEG F7-LER', 'EEG F8-LER', 'EEG F3-LER', 'EEG F4-LER', 'EEG T3-LER', 'EEG T4-LER', 'EEG C3-LER', 'EEG C4-LER', 'EEG T5-LER', 'EEG T6-LER', 'EEG P3-LER', 'EEG P4-LER', 'EEG O1-LER', 'EEG O2-LER', 'EEG Fz-LER', 'EEG Cz-LER', 'EEG Pz-LER', 'EEG Oz-LER']
+    deep1010: False
+    rename_channels: 
+      FP1-LER: EEG Fp1-LER
+      FP2-LER: EEG Fp2-LER
+      F7-LER: EEG F7-LER
+      F3-LER: EEG F3-LER
+      F4-LER: EEG F4-LER
+      T3-LER: EEG T3-LER
+      T4-LER: EEG T4-LER
+      C3-LER: EEG C3-LER
+      C4-LER: EEG C4-LER
+      T5-LER: EEG T5-LER
+      T6-LER: EEG T6-LER
+      P3-LER: EEG P3-LER
+      P4-LER: EEG P4-LER
+      O1-LER: EEG O1-LER
+      O2-LER: EEG O2-LER
+      FZ-LER: EEG Fz-LER
+      CZ-LER: EEG Cz-LER
+      PZ-LER: EEG Pz-LER
+      OZ-LER: EEG Oz-LER
+    train_params: 
+      epochs: 7
+      batch_size: 4
+    lr: 0.0001
+    folds: 5
