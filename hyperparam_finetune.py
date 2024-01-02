@@ -64,7 +64,7 @@ def main(args):
     print('Saving outputs in', output_path)
     # load model args from pretrained model
     if 'chapman' in args.data_path:
-        res_path = res_path + f'leads_{args.leads}_optenc_{args.optimize_encoder}_{args.seed}_results.pkl'
+        res_path = res_path + f'leads_{args.leads}_optenc_{args.optimize_encoder}_optmpnn_{args.optimize_mpnn}_{args.seed}_results.pkl'
     else:
         res_path = res_path + f'optenc_{args.optimize_encoder}_{args.seed}_results.pkl'
     if not args.update_results:
